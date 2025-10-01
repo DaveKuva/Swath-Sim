@@ -228,7 +228,7 @@
 
                 <div id="advancedControls" class="overflow-hidden transition-all duration-300 ease-in-out" style="max-height: 0px;">
                     <div class="flex items-center justify-between pt-3 mt-2">
-                        <label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast Forward (1s = 1hr)</label>
+                        <label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast Forward (1s = 1min)</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="timeWarpToggle">
                             <span class="slider"></span>
@@ -271,6 +271,9 @@
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+        import { Line2 } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/Line2.js';
+        import { LineMaterial } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/LineMaterial.js';
+        import { LineGeometry } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/LineGeometry.js';
 
         // --- DOM Elements ---
         const container = document.getElementById('container');
@@ -307,7 +310,7 @@
         let clock;
         let simulationTime;
         let isTimeWarping = false;
-        const TIME_WARP_FACTOR = 3600;
+        const TIME_WARP_FACTOR = 60;
         
         let cameraTransitionState = 'idle';
         let cameraTransitionProgress = 0;
@@ -632,7 +635,8 @@
                 transparent: true,
                 opacity: 0.25,
                 side: THREE.DoubleSide,
-                depthWrite: false
+                depthWrite: false,
+                depthTest: false
              });
              const beam = new THREE.Mesh(beamGeometry, beamMaterial);
              scene.add(beam);
@@ -698,24 +702,29 @@
                 const time = new Date(epochDate.getTime() + (i / segments) * orbitalPeriod * 60000);
                 const positionEci = satellite.propagate(satrec, time).position;
                 if (positionEci) {
-                    points.push(new THREE.Vector3(
+                    points.push(
                         positionEci.x * SCALING_FACTOR, 
                         positionEci.z * SCALING_FACTOR, 
                         -positionEci.y * SCALING_FACTOR
-                    ));
+                    );
                 }
             }
             
-            // Create a smooth curve from the points, then a tube geometry
-            const curve = new THREE.CatmullRomCurve3(points);
-            const tubeGeometry = new THREE.TubeGeometry(curve, 1024, 0.01, 8, true);
-            const material = new THREE.MeshBasicMaterial({
+            const lineGeometry = new LineGeometry();
+            lineGeometry.setPositions(points);
+
+            const lineMaterial = new LineMaterial({
                 color: 0xffffff,
+                linewidth: 2, // in pixels
                 transparent: true,
-                opacity: 0.35
+                opacity: 0.5,
+                resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
             });
-            const orbitTube = new THREE.Mesh(tubeGeometry, material);
-            return orbitTube;
+
+            const orbitLine = new Line2(lineGeometry, lineMaterial);
+            orbitLine.computeLineDistances();
+            
+            return orbitLine;
         }
 
         function updateSatelliteListUI() {
@@ -953,7 +962,7 @@
                         
                         if (swathShouldBeVisible) {
                             const surfacePosition = instance.mesh.position.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED); // Touches the Earth model
-                            instance.swath.position.copy(surfacePosition.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.002)); // Keep swath slightly above to prevent z-fighting
+                            instance.swath.position.copy(surfacePosition.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005)); // Keep swath slightly above to prevent z-fighting
                             
                             const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
                             instance.swath.up.copy(satVelocityVector);
@@ -983,7 +992,7 @@
                                         if (!enforceDayNightSwath || isSnapshotDaySide) {
                                             const snapshot = createSwath();
                                             snapshot.visible = true;
-                                            const surfacePosition = snapshotPosition3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.002);
+                                            const surfacePosition = snapshotPosition3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
                                             snapshot.position.copy(surfacePosition);
                                             const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
                                             snapshot.up.copy(satVelocityVector);
@@ -1070,6 +1079,13 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+
+            // Update resolution for thick lines
+            Object.values(trackedSatellites).forEach(sat => {
+                if (sat.orbit && sat.orbit.material.isLineMaterial) {
+                    sat.orbit.material.resolution.set(window.innerWidth, window.innerHeight);
+                }
+            });
         }
 
         init();
