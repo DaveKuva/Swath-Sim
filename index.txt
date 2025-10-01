@@ -26,6 +26,7 @@
         }
         .ui-panel {
             position: absolute;
+            z-index: 9;
             padding: 1rem;
             background-color: rgba(0, 0, 0, 0.7);
             border-radius: 0.5rem;
@@ -172,6 +173,13 @@
         #advancedControlsChevron.rotate-180 {
             transform: rotate(180deg);
         }
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .panel-toggle {
+                padding: 1.5rem 0.75rem;
+                font-size: 1.1rem;
+            }
+        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -213,7 +221,7 @@
                      <label for="focusSelect" class="font-bold text-sm">Focus</label>
                      <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
                 </div>
-                 <div id="constellationControl" class="hidden space-y-2">
+                 <div id="constellationControl" class="space-y-2">
                     <label for="constellationSlider" class="font-bold text-sm">Hyperfield Constellation Size: <span id="constellationCount">2</span></label>
                     <input type="range" id="constellationSlider" min="2" max="100" value="2" class="w-full">
                 </div>
@@ -254,7 +262,7 @@
     </div>
 
     <!-- Focused Satellite Info Panel -->
-    <div id="focusedSatInfo" class="ui-panel hidden" style="bottom: 1rem; left: 50%; transform: translateX(-50%);">
+    <div id="focusedSatInfo" class="ui-panel hidden" style="bottom: 1rem; left: 1rem;">
         <!-- Content dynamically populated by JS -->
     </div>
 
@@ -311,6 +319,7 @@
         let simulationTime;
         let isTimeWarping = false;
         const TIME_WARP_FACTOR = 60;
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
         
         let cameraTransitionState = 'idle';
         let cameraTransitionProgress = 0;
@@ -374,10 +383,18 @@
             trackEarthBtn.addEventListener('click', () => setCameraMode('earth'));
             trackSatelliteBtn.addEventListener('click', () => setCameraMode('satellite'));
             focusSelect.addEventListener('change', (e) => setFocusedSatellite(e.target.value));
-            toggleLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.toggle('open'));
-            toggleRightPanelBtn.addEventListener('click', () => cameraPanel.classList.toggle('open'));
+
+            // Mobile-friendly touch events
+            const toggleLeft = () => satellitePanel.classList.toggle('open');
+            const toggleRight = () => cameraPanel.classList.toggle('open');
+            toggleLeftPanelBtn.addEventListener('click', toggleLeft);
+            toggleLeftPanelBtn.addEventListener('touchstart', toggleLeft);
+            toggleRightPanelBtn.addEventListener('click', toggleRight);
+            toggleRightPanelBtn.addEventListener('touchstart', toggleRight);
+            
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
             closeRightPanelBtn.addEventListener('click', () => cameraPanel.classList.remove('open'));
+            
             constellationSlider.addEventListener('input', (e) => {
                 const size = parseInt(e.target.value, 10);
                 constellationCount.textContent = size;
@@ -386,6 +403,16 @@
             
             timeWarpToggle.addEventListener('change', (e) => {
                 isTimeWarping = e.target.checked;
+                if (!isTimeWarping) { // When fast forward is turned OFF
+                    for (const id in trackedSatellites) {
+                        const sat = trackedSatellites[id];
+                        if (sat.isSwathRecording) {
+                            clearSwathPath(id);
+                            sat.isSwathRecording = false; // Reset the state
+                        }
+                    }
+                    updateSatelliteListUI(); // Refresh UI to show toggles are off
+                }
             });
 
             dayNightSwathToggle.addEventListener('change', (e) => {
@@ -418,9 +445,9 @@
                     sat.isSwathVisible = e.target.checked;
                 } else if (e.target.classList.contains('record-toggle')) {
                     sat.isSwathRecording = e.target.checked;
-                    if (!e.target.checked) {
-                        clearSwathPath(satId);
-                    }
+                    // Always clear the path when the state changes.
+                    // This ensures a clean start when toggling on, and cleanup when toggling off.
+                    clearSwathPath(satId);
                 }
             });
 
@@ -535,7 +562,7 @@
             const skyboxMaterial = new THREE.MeshBasicMaterial({
                 map: texture,
                 side: THREE.BackSide,
-                color: 0x4c4c4c 
+                color: 0x5f5f5f 
             });
             const skybox = new THREE.Mesh(skyboxGeometry, skyboxMaterial);
             scene.add(skybox);
@@ -647,6 +674,7 @@
                 beam: beam,
                 swathPath: [],
                 lastSnapshotPosition: new THREE.Vector3(),
+                needsSnapshotReset: true, // Initialize the reset flag
                 velocity: { x: 0, y: 0, z: 0 }
             };
         }
@@ -688,6 +716,7 @@
                 sat.instances.forEach(inst => {
                     inst.swathPath.forEach(swath => earth.remove(swath));
                     inst.swathPath = [];
+                    inst.needsSnapshotReset = true; // Set the flag to reset position
                 });
             }
         }
@@ -695,7 +724,7 @@
         function createOrbit(satrec) {
             const points = [];
             const orbitalPeriod = (2 * Math.PI) / satrec.no;
-            const segments = 1024;
+            const segments = isMobile ? 512 : 1024;
             const epochDate = new Date((satrec.jdsatepoch - 2440587.5) * 86400000);
 
             for (let i = 0; i <= segments; i++) {
@@ -715,7 +744,7 @@
 
             const lineMaterial = new LineMaterial({
                 color: 0xffffff,
-                linewidth: 2, // in pixels
+                linewidth: isMobile ? 3 : 2, // Thicker on mobile
                 transparent: true,
                 opacity: 0.5,
                 resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
@@ -829,7 +858,7 @@
                 trackEarthBtn.classList.replace('bg-gray-600', 'bg-sky-600');
                 trackSatelliteBtn.classList.replace('bg-sky-600', 'bg-gray-600');
                 focusControl.classList.add('hidden');
-                constellationControl.classList.add('hidden');
+                constellationControl.classList.remove('hidden'); // Show the slider in Earth view
                 
                 if(focusedSatelliteId) {
                     setFocusedSatellite("");
@@ -852,7 +881,13 @@
             focusedSatelliteId = noradId;
             const sat = trackedSatellites[focusedSatelliteId];
             const isHyperfield = sat && sat.tleName.toUpperCase().includes('HYPERFIELD');
-            constellationControl.classList.toggle('hidden', !isHyperfield || cameraMode !== 'satellite');
+            
+            // Only manage the constellation slider visibility when in satellite mode.
+            // The 'earth' mode visibility is handled by setCameraMode.
+            if (cameraMode === 'satellite') {
+                constellationControl.classList.toggle('hidden', !isHyperfield);
+            }
+
             if (focusSelect.value != (noradId || "")) focusSelect.value = noradId || "";
             updateFocusedSatInfoUI();
         }
@@ -982,6 +1017,11 @@
 
 
                             if (sat.isSwathRecording) {
+                                if (instance.needsSnapshotReset) {
+                                    instance.lastSnapshotPosition.copy(instance.mesh.position);
+                                    instance.needsSnapshotReset = false;
+                                }
+
                                 const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
                                 if (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > 0.0001) {
                                     while (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
