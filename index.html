@@ -255,9 +255,6 @@
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/OrbitControls.js';
-        import { Line2 } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/Line2.js';
-        import { LineMaterial } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/LineMaterial.js';
-        import { LineGeometry } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/lines/LineGeometry.js';
 
         // --- DOM Elements ---
         const container = document.getElementById('container');
@@ -339,7 +336,7 @@
             
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             container.appendChild(renderer.domElement);
 
             controls = new OrbitControls(camera, renderer.domElement);
@@ -483,14 +480,14 @@
         
         function createEarth() {
             const textureLoader = new THREE.TextureLoader();
-            const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 64, 64);
+            const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 32, 32);
             const earthMaterial = new THREE.MeshLambertMaterial({
                 map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg'),
             });
             earth = new THREE.Mesh(earthGeometry, earthMaterial);
             scene.add(earth);
 
-            const cloudGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 64, 64);
+            const cloudGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
             const cloudMaterial = new THREE.MeshPhongMaterial({
                 map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'),
                 transparent: true,
@@ -499,7 +496,7 @@
             clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
             scene.add(clouds);
 
-            const atmosphereGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.02, 64, 64);
+            const atmosphereGeometry = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.02, 32, 32);
             const atmosphereMaterial = new THREE.ShaderMaterial({
                 vertexShader: document.getElementById('vertexShader').textContent,
                 fragmentShader: document.getElementById('fragmentShader').textContent,
@@ -584,7 +581,17 @@
 
         function createSatelliteInstance(isMain = false) {
              const newColor = isMain ? SAT_COLORS[satColorIndex++ % SAT_COLORS.length] : 0xaaaaaa;
-             const satMesh = new THREE.Mesh(new THREE.SphereGeometry(isMain ? 0.05 : 0.03, 16, 16), new THREE.MeshBasicMaterial({ color: newColor }));
+             // EDIT: Scaled dimensions to real-world proportions
+             const baseSize = 0.08; // This is the visual size of the longest dimension
+             const scaleFactor = baseSize / 366; 
+             const mainSatSize = { x: 226 * scaleFactor, y: 100 * scaleFactor, z: 366 * scaleFactor };
+             const instanceSatSize = { x: mainSatSize.x / 2, y: mainSatSize.y / 2, z: mainSatSize.z / 2 };
+             const size = isMain ? mainSatSize : instanceSatSize;
+    
+             const satGeometry = new THREE.BoxGeometry(size.x, size.y, size.z);
+             const satMaterial = new THREE.MeshBasicMaterial({ color: newColor });
+             const satMesh = new THREE.Mesh(satGeometry, satMaterial);
+             
              scene.add(satMesh);
              const swath = createSwath();
              scene.add(swath);
@@ -646,14 +653,17 @@
             for (let i = 0; i <= segments; i++) {
                 const time = new Date(epochDate.getTime() + (i / segments) * orbitalPeriod * 60000);
                 const positionEci = satellite.propagate(satrec, time).position;
-                if (positionEci) points.push(positionEci.x * SCALING_FACTOR, positionEci.z * SCALING_FACTOR, -positionEci.y * SCALING_FACTOR);
+                if (positionEci) {
+                    points.push(new THREE.Vector3(
+                        positionEci.x * SCALING_FACTOR, 
+                        positionEci.z * SCALING_FACTOR, 
+                        -positionEci.y * SCALING_FACTOR
+                    ));
+                }
             }
-            const geometry = new LineGeometry();
-            geometry.setPositions(points);
-            const material = new LineMaterial({ color: 0xffffff, linewidth: 2, transparent: true, opacity: 0.5 });
-            material.resolution.set(window.innerWidth, window.innerHeight);
-            const orbitLine = new Line2(geometry, material);
-            orbitLine.computeLineDistances();
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
+            const orbitLine = new THREE.Line(geometry, material);
             return orbitLine;
         }
 
@@ -830,7 +840,6 @@
             const sunPosition = calculateSunPosition(now);
             directionalLight.position.copy(sunPosition);
             
-            // FIX: Satellite positions must be updated before camera logic
             for (const id in trackedSatellites) {
                 const sat = trackedSatellites[id];
                 
@@ -861,6 +870,10 @@
                         instance.mesh.position.set(posEci.x * SCALING_FACTOR, posEci.z * SCALING_FACTOR, -posEci.y * SCALING_FACTOR);
                         instance.velocity = velEci;
                         
+                        const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
+                        instance.mesh.up.copy(satVelocityVector);
+                        instance.mesh.lookAt(earth.position);
+
                         if (index === 0) {
                             const posGd = satellite.eciToGeodetic(posEci, gmst);
                             const altitude = posGd.height;
@@ -991,12 +1004,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-
-            for (const id in trackedSatellites) {
-                if (trackedSatellites[id].orbit?.material) {
-                    trackedSatellites[id].orbit.material.resolution.set(window.innerWidth, window.innerHeight);
-                }
-            }
         }
 
         init();
