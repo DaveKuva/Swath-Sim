@@ -1001,25 +1001,16 @@
 
 
                             if (sat.isSwathRecording) {
-                                if (instance.needsSnapshotReset) {
-                                    instance.lastSnapshotPosition.copy(instance.mesh.position);
-                                    instance.needsSnapshotReset = false;
-                                }
-
-                                const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
-                                // Use a single IF instead of a WHILE loop to prevent jumps
-                                if (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
-                                    const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
-                                    const snapshotPosition3D = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
-                                    
-                                    const isSnapshotDaySide = snapshotPosition3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
+                                // Helper to create a single snapshot
+                                const createAndPlaceSnapshot = (position3D) => {
+                                    const isSnapshotDaySide = position3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
                                     if (!enforceDayNightSwath || isSnapshotDaySide) {
                                         const snapshot = createSwath();
                                         snapshot.visible = true;
-                                        const surfacePosition = snapshotPosition3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
-                                        snapshot.position.copy(surfacePosition);
-                                        const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-                                        snapshot.up.copy(satVelocityVector);
+                                        const snapshotSurfacePos = position3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
+                                        snapshot.position.copy(snapshotSurfacePos);
+                                        const satVelVec = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
+                                        snapshot.up.copy(satVelVec);
                                         snapshot.lookAt(earth.position);
                                         const color = (instance.swathPath.length % 2 === 0) ? 0xffff00 : 0xffa500;
                                         snapshot.material.color.setHex(color);
@@ -1029,7 +1020,22 @@
                                         earth.add(snapshot);
                                         instance.swathPath.push(snapshot);
                                     }
-                                    instance.lastSnapshotPosition.copy(snapshotPosition3D);
+                                };
+                                
+                                // If it's the first frame of recording, place a snapshot immediately
+                                if (instance.needsSnapshotReset) {
+                                    createAndPlaceSnapshot(instance.mesh.position);
+                                    instance.lastSnapshotPosition.copy(instance.mesh.position);
+                                    instance.needsSnapshotReset = false;
+                                }
+
+                                const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
+                                // For subsequent frames, fill in any gaps
+                                while (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
+                                    const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
+                                    const nextSnapshotPosition = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
+                                    createAndPlaceSnapshot(nextSnapshotPosition);
+                                    instance.lastSnapshotPosition.copy(nextSnapshotPosition);
                                 }
                             }
                         }
