@@ -12,7 +12,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>3D Satellite Tracker & Analyzer</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @font-face {
             font-family: 'FKGroteskSemiMono';
@@ -88,6 +87,7 @@
             transition: background-color 0.2s;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-right: none;
+            text-transform: capitalize;
         }
         .panel-toggle:hover {
              background-color: rgba(30, 30, 30, 0.9);
@@ -141,80 +141,55 @@
         input:checked + .slider { background-color: #2563eb; }
         input:checked + .slider:before { transform: translateX(26px); }
         .chevron-icon.rotate-180 { transform: rotate(180deg); }
-        .chart-container { position: relative; width: 100%; height: 300px; max-height: 40vh; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <img id="logo" src="https://davekuva.github.io/Swath-Sim/images/logo.png" alt="Logo">
     <div id="container"></div>
 
-    <div id="toggleLeftPanelBtn" class="panel-toggle">SATELLITES</div>
+    <div id="toggleLeftPanelBtn" class="panel-toggle">Satellites</div>
 
     <div id="satellitePanel" class="slide-panel p-0">
         <div class="p-6 pb-4 flex justify-between items-center flex-shrink-0 relative">
-            <h2 class="text-xl font-bold">Satellite Menu</h2>
+            <h2 class="text-xl font-bold">Satellite menu</h2>
             <button id="closeLeftPanelBtn" class="close-panel-btn top-4 right-4 text-2xl">&times;</button>
         </div>
 
         <div class="overflow-y-auto px-6 pb-6">
-            <p class="text-sm text-gray-400 mb-4">Tap a satellite to focus on it. Expand the sections below to access more controls and analysis tools.</p>
+            <p class="text-sm text-gray-400 mb-4">Tap a satellite to focus on it. Expand the sections below to access more controls.</p>
             <div id="satelliteList" class="space-y-3 pr-2 border-b border-gray-700 pb-4">
                  <p class="text-gray-400">Loading satellites...</p>
             </div>
 
-            <div class="mt-2 pt-2">
+            <div id="constellationControl" class="space-y-2 mt-4 pt-4 border-t border-gray-700">
+                <label for="constellationSlider" class="font-bold text-sm">Hyperfield constellation size: <span id="constellationCount">2</span></label>
+                <input type="range" id="constellationSlider" min="2" max="100" value="2" class="w-full">
+            </div>
+
+            <div class="mt-2 pt-2 border-t border-gray-700">
                 <button id="toggleControlsSectionBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
-                    <span>Display Controls</span>
+                    <span>Display controls</span>
                     <svg id="controlsChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div id="controlsSection" class="overflow-hidden transition-all duration-300 ease-in-out px-2" style="max-height: 0px;">
-                    <div class="flex flex-col gap-4 py-4">
-                        <div>
-                            <label class="font-bold text-sm">Camera Mode</label>
-                            <div class="flex gap-2 mt-1">
-                                <button id="trackEarthBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full">Global View</button>
-                            </div>
+                    <div class="py-4">
+                        <label class="font-bold text-sm">Camera mode</label>
+                        <div class="flex gap-2 mt-1">
+                            <button id="trackEarthBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full">Global view</button>
                         </div>
-                        <div class="pt-4 border-t border-gray-700">
-                            <label class="font-bold text-sm">Data Management</label>
-                            <div class="flex gap-2 mt-1">
-                                <button id="updateTleBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full disabled:bg-gray-600 disabled:cursor-not-allowed">Update TLE Data</button>
-                            </div>
-                            <p id="tleUpdateStatus" class="text-sm text-gray-400 mt-2 h-4 text-center"></p>
-                        </div>
-                        <div id="focusControl" class="hidden">
-                             <label for="focusSelect" class="font-bold text-sm">Focus Target</label>
+                         <div id="focusControl" class="hidden mt-4">
+                             <label for="focusSelect" class="font-bold text-sm">Focus target</label>
                              <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                        </div>
-                        <div id="constellationControl" class="space-y-2">
-                            <label for="constellationSlider" class="font-bold text-sm">Hyperfield Constellation Size: <span id="constellationCount">2</span></label>
-                            <input type="range" id="constellationSlider" min="2" max="100" value="2" class="w-full">
-                        </div>
-                        <div class="flex flex-col pt-4 border-t border-gray-700">
-                            <button id="toggleAdvancedControlsBtn" class="w-full text-left font-bold text-sm py-2 rounded-md hover:bg-gray-800 transition-colors duration-200 flex justify-between items-center">
-                                <span>Advanced Visuals</span>
-                                <svg id="advancedControlsChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                            </button>
-                            <div id="advancedControls" class="overflow-hidden transition-all duration-300 ease-in-out" style="max-height: 0px;">
-                                <div class="flex items-center justify-between pt-3 mt-2"><label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast Forward (1s=1min)</label><label class="toggle-switch"><input type="checkbox" id="timeWarpToggle"><span class="slider"></span></label></div>
-                                <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/Night Swath Only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
-                                <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show Satellite Beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="pt-2 border-t border-gray-700">
-                <button id="toggleAnalysisSectionBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
-                    <span>Orbital Analysis</span>
-                    <svg id="analysisChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                <div id="analysisSection" class="overflow-hidden transition-all duration-300 ease-in-out px-2" style="max-height: 0px;">
-                    <div id="analysisContent" class="py-4">
-                        <p id="analysisDescription" class="text-sm text-gray-400 mb-4">Select a satellite to view its altitude profile over one complete orbit.</p>
-                        <div class="chart-container"><canvas id="altitudeChart"></canvas></div>
-                    </div>
+             <div class="mt-2 pt-4 border-t border-gray-700">
+                <label class="font-bold text-md px-2">Advanced visuals</label>
+                <div class="px-2 py-2">
+                    <div class="flex items-center justify-between pt-3"><label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast forward (1s=1min)</label><label class="toggle-switch"><input type="checkbox" id="timeWarpToggle"><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/night swath only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
+                    <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show satellite beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
                 </div>
             </div>
         </div>
@@ -250,20 +225,11 @@
         const constellationSlider = document.getElementById('constellationSlider');
         const constellationCount = document.getElementById('constellationCount');
         const timeWarpToggle = document.getElementById('timeWarpToggle');
-        const toggleAdvancedControlsBtn = document.getElementById('toggleAdvancedControlsBtn');
-        const advancedControls = document.getElementById('advancedControls');
-        const advancedControlsChevron = document.getElementById('advancedControlsChevron');
         const dayNightSwathToggle = document.getElementById('dayNightSwathToggle');
         const beamsToggle = document.getElementById('beamsToggle');
-        const analysisDescription = document.getElementById('analysisDescription');
         const toggleControlsSectionBtn = document.getElementById('toggleControlsSectionBtn');
         const controlsSection = document.getElementById('controlsSection');
         const controlsChevron = document.getElementById('controlsChevron');
-        const toggleAnalysisSectionBtn = document.getElementById('toggleAnalysisSectionBtn');
-        const analysisSection = document.getElementById('analysisSection');
-        const analysisChevron = document.getElementById('analysisChevron');
-        const updateTleBtn = document.getElementById('updateTleBtn');
-        const tleUpdateStatus = document.getElementById('tleUpdateStatus');
         
         let scene, camera, renderer, controls, directionalLight;
         let earth, clouds, atmosphere;
@@ -286,7 +252,6 @@
 
         let enforceDayNightSwath = true;
         let showBeams = true;
-        let altitudeChart;
 
         const EARTH_RADIUS_KM = 6371;
         const SCALING_FACTOR = 1 / 1000;
@@ -294,8 +259,8 @@
         const SAT_COLORS = [0xff6347, 0x9370db, 0x4682b4, 0x32cd32, 0xffd700, 0x00fa9a, 0xff4500, 0x1e90ff];
         const SWATH_SNAPSHOT_DISTANCE_KM = 45; 
         const DEFAULT_TLES = {
-            '60562': ['HYPERFIELD-1A', '1 60562U 24149CY  25273.14645047  .00015321  00000+0  58728-3 0  9993', '2 60562  97.4049 350.0439 0006684 141.6331 218.5385 15.26583021 62307'],
-            '64552': ['HYPERFIELD-1B', '1 64552U 25135AA  25273.18590572  .00010550  00000+0  50593-3 0  9999', '2 64552  97.4478  26.1903 0002229 109.4879 250.6596 15.19077417 15367']
+            '60562': ['Hyperfield-1A', '1 60562U 24149CY  25273.14645047  .00015321  00000+0  58728-3 0  9993', '2 60562  97.4049 350.0439 0006684 141.6331 218.5385 15.26583021 62307'],
+            '64552': ['Hyperfield-1B', '1 64552U 25135AA  25273.18590572  .00010550  00000+0  50593-3 0  9999', '2 64552  97.4478  26.1903 0002229 109.4879 250.6596 15.19077417 15367']
         };
 
         function init() {
@@ -321,7 +286,6 @@
 
             createSkybox();
             createEarth();
-            initChart();
             
             window.addEventListener('resize', onWindowResize, false);
             trackEarthBtn.addEventListener('click', () => setCameraMode('earth'));
@@ -353,22 +317,10 @@
             dayNightSwathToggle.addEventListener('change', (e) => { enforceDayNightSwath = e.target.checked; });
             beamsToggle.addEventListener('change', (e) => { showBeams = e.target.checked; });
 
-            toggleAdvancedControlsBtn.addEventListener('click', () => {
-                const isOpen = advancedControls.style.maxHeight !== '0px';
-                advancedControls.style.maxHeight = isOpen ? '0px' : advancedControls.scrollHeight + 'px';
-                advancedControlsChevron.classList.toggle('rotate-180', !isOpen);
-            });
-
             toggleControlsSectionBtn.addEventListener('click', () => {
                 const isOpen = controlsSection.style.maxHeight !== '0px';
                 controlsSection.style.maxHeight = isOpen ? '0px' : controlsSection.scrollHeight + 'px';
                 controlsChevron.classList.toggle('rotate-180', !isOpen);
-            });
-
-            toggleAnalysisSectionBtn.addEventListener('click', () => {
-                const isOpen = analysisSection.style.maxHeight !== '0px';
-                analysisSection.style.maxHeight = isOpen ? '0px' : analysisSection.scrollHeight + 'px';
-                analysisChevron.classList.toggle('rotate-180', !isOpen);
             });
            
             satellitePanel.addEventListener('click', (e) => {
@@ -377,7 +329,6 @@
                     const satId = satItem.dataset.id;
                     setCameraMode('satellite');
                     setFocusedSatellite(satId);
-                    satellitePanel.classList.remove('open');
                 }
             });
 
@@ -392,33 +343,7 @@
                     clearSwathPath(satId);
                 }
             });
-
-            updateTleBtn.addEventListener('click', async () => {
-                updateTleBtn.disabled = true;
-                updateTleBtn.textContent = 'Updating...';
-                tleUpdateStatus.textContent = 'Fetching new data...';
-
-                try {
-                    const foundNewData = await updateAllTLEs();
-
-                    if (foundNewData) {
-                        tleUpdateStatus.textContent = 'Success: New telemetry found!';
-                    } else {
-                        tleUpdateStatus.textContent = 'Telemetry data is up to date.';
-                    }
-                } catch (error) {
-                    console.error("TLE Update failed:", error);
-                    tleUpdateStatus.textContent = 'Error: Update failed.';
-                }
-
-                setTimeout(() => { tleUpdateStatus.textContent = ''; }, 5000);
-
-                updateTleBtn.textContent = 'Update on Cooldown';
-                setTimeout(() => {
-                    updateTleBtn.disabled = false;
-                    updateTleBtn.textContent = 'Update TLE Data';
-                }, 3600 * 1000); // 1 hour
-            });
+            
             start();
         }
         
@@ -427,12 +352,19 @@
             await initializeSatellites();
             animate();
         }
+        
+        function toSentenceCase(str) {
+            if (!str) return '';
+            const words = str.split('-');
+            return words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('-');
+        }
 
         async function initializeSatellites() {
             Object.keys(DEFAULT_TLES).forEach(id => addSatellite(id, DEFAULT_TLES[id]));
             focusedSatelliteId = null;
             updateSatelliteListUI();
             await updateAllTLEs();
+            setInterval(updateAllTLEs, 3600 * 1000 * 6); // Fetch every 6 hours
         }
 
         async function updateAllTLEs() {
@@ -462,9 +394,10 @@
                 if (result.status === 'success') {
                     const { noradId, tleData } = result;
                     const sat = trackedSatellites[noradId];
-                    console.log(`Updating ${noradId} with new TLE for ${tleData[0]}`);
+                    const newName = toSentenceCase(tleData[0]);
+                    console.log(`Updating ${noradId} with new TLE for ${newName}`);
                     sat.satrec = satellite.twoline2satrec(tleData[1], tleData[2]);
-                    sat.tleName = tleData[0];
+                    sat.tleName = newName;
                     scene.remove(sat.orbit);
                     sat.orbit = createOrbit(sat.satrec);
                     scene.add(sat.orbit);
@@ -617,11 +550,11 @@
                 const satElement = document.createElement('div');
                 satElement.className = 'sat-item text-sm';
                 
-                const isHyperfield = sat.tleName.toUpperCase().includes('HYPERFIELD');
+                const isHyperfield = sat.tleName.toLowerCase().includes('hyperfield');
                 const swathControlsHTML = isHyperfield ? `
                     <div class="mt-2 pt-2 border-t border-gray-700 space-y-2">
-                        <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Show Live Swath</label><label class="toggle-switch"><input type="checkbox" class="swath-toggle" data-id="${id}" ${sat.isSwathVisible ? 'checked' : ''}><span class="slider"></span></label></div>
-                        <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Record Swath Path</label><label class="toggle-switch"><input type="checkbox" class="record-toggle" data-id="${id}" ${sat.isSwathRecording ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Show live swath</label><label class="toggle-switch"><input type="checkbox" class="swath-toggle" data-id="${id}" ${sat.isSwathVisible ? 'checked' : ''}><span class="slider"></span></label></div>
+                        <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Record swath path</label><label class="toggle-switch"><input type="checkbox" class="record-toggle" data-id="${id}" ${sat.isSwathRecording ? 'checked' : ''}><span class="slider"></span></label></div>
                     </div>` : '';
 
                 satElement.innerHTML = `<div class="sat-item-clickable p-2 rounded-md transition-colors duration-200 cursor-pointer" data-id="${id}">
@@ -684,7 +617,7 @@
                  trackEarthBtn.classList.replace('hover:bg-sky-700', 'hover:bg-gray-700');
                  focusControl.classList.remove('hidden');
                  const sat = trackedSatellites[focusedSatelliteId];
-                 const isHyperfield = sat && sat.tleName.toUpperCase().includes('HYPERFIELD');
+                 const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
                  constellationControl.classList.toggle('hidden', !isHyperfield);
                  controls.minDistance = 0.1;
             }
@@ -694,12 +627,11 @@
         function updateFocusedSatelliteState(noradId) {
             focusedSatelliteId = noradId;
             const sat = trackedSatellites[focusedSatelliteId];
-            const isHyperfield = sat && sat.tleName.toUpperCase().includes('HYPERFIELD');
+            const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
             
             if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
             if (focusSelect.value != (noradId || "")) focusSelect.value = noradId || "";
             updateFocusedSatInfoUI();
-            updateAnalysisPanel();
         }
         
         function setFocusedSatellite(noradId) {
@@ -781,7 +713,7 @@
                             }
                         }
 
-                        const isHyperfield = sat.tleName.toUpperCase().includes('HYPERFIELD');
+                        const isHyperfield = sat.tleName.toLowerCase().includes('hyperfield');
                         const isDaySide = instance.mesh.position.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
                         const swathShouldBeVisible = (enforceDayNightSwath ? isDaySide : true) && isHyperfield && sat.isSwathVisible;
                         instance.swath.visible = swathShouldBeVisible;
@@ -869,57 +801,6 @@
             }
         }
         
-        function initChart() {
-            const ctx = document.getElementById('altitudeChart').getContext('2d');
-            altitudeChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: [], datasets: [{ label: 'Altitude (km)', data: [], borderColor: 'rgba(54, 162, 235, 1)', backgroundColor: 'rgba(54, 162, 235, 0.2)', borderWidth: 2, fill: true, tension: 0.4 }] },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        y: { ticks: { color: '#fff' }, grid: { color: 'rgba(255,255,255,0.1)' } },
-                        x: { ticks: { color: '#fff', autoSkip: true, maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.1)' }, title: { display: true, text: 'Time in Orbit (minutes)', color: '#fff' } }
-                    },
-                    plugins: { legend: { labels: { color: '#fff' } } }
-                }
-            });
-        }
-
-        function updateAnalysisPanel() {
-            if (focusedSatelliteId && trackedSatellites[focusedSatelliteId]) {
-                const sat = trackedSatellites[focusedSatelliteId];
-                analysisDescription.textContent = `This chart shows the altitude profile for ${sat.tleName} over one complete orbit, illustrating its highest (apogee) and lowest (perigee) points.`;
-                const chartData = generateChartData(sat.satrec);
-                altitudeChart.data.labels = chartData.labels;
-                altitudeChart.data.datasets[0].data = chartData.data;
-                altitudeChart.update();
-            } else {
-                analysisDescription.textContent = 'Select a satellite to view its altitude profile over one complete orbit.';
-                altitudeChart.data.labels = [];
-                altitudeChart.data.datasets[0].data = [];
-                altitudeChart.update();
-            }
-        }
-
-        function generateChartData(satrec) {
-            const orbitalPeriodMinutes = (2 * Math.PI) / satrec.no;
-            const segments = 128;
-            const labels = [], data = [];
-            const epochDate = new Date((satrec.jdsatepoch - 2440587.5) * 86400000);
-            for (let i = 0; i <= segments; i++) {
-                const minutesIntoOrbit = (i / segments) * orbitalPeriodMinutes;
-                const time = new Date(epochDate.getTime() + minutesIntoOrbit * 60000);
-                const gmst = satellite.gstime(time);
-                const positionEci = satellite.propagate(satrec, time).position;
-                if (positionEci) {
-                    const posGd = satellite.eciToGeodetic(positionEci, gmst);
-                    labels.push(minutesIntoOrbit.toFixed(1));
-                    data.push(posGd.height.toFixed(2));
-                }
-            }
-            return { labels, data };
-        }
-
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -934,8 +815,4 @@
     </script>
 </body>
 </html>
-
-
-
-
 
