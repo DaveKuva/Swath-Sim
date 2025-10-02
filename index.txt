@@ -26,8 +26,8 @@
             margin: 0;
             overflow: hidden;
             font-family: 'FKGroteskSemiMono', sans-serif;
-            background-color: #000000;
-            color: white;
+            background-color: #0A0A0A;
+            color: #FDFDFD;
             -webkit-tap-highlight-color: transparent;
         }
         canvas {
@@ -45,7 +45,7 @@
             position: absolute;
             z-index: 9;
             padding: 1rem;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(10, 10, 10, 0.7);
             border-radius: 0.5rem;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -57,7 +57,7 @@
             height: 100vh;
             width: 300px; 
             max-width: 85%;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(10, 10, 10, 0.8);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
@@ -79,7 +79,7 @@
         .panel-toggle {
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            background-color: rgba(0, 0, 0, 0.8);
+            background-color: rgba(10, 10, 10, 0.8);
             padding: 1.25rem 0.5rem;
             cursor: pointer;
             font-weight: bold;
@@ -116,7 +116,7 @@
             text-align: center;
         }
         .close-panel-btn:hover {
-            color: #ffffff;
+            color: #FDFDFD;
         }
         #focusedSatInfo {
             max-width: calc(100% - 2rem);
@@ -126,19 +126,24 @@
             padding-bottom: 0.75rem;
             margin-bottom: 0.75rem;
         }
+        .sat-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
         .sat-item-clickable:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
         .custom-select {
             -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FDFDFD%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
             background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto;
         }
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 24px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #4a5568; transition: .4s; border-radius: 24px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #2563eb; }
+        input:checked + .slider { background-color: #A5AEAB; }
         input:checked + .slider:before { transform: translateX(26px); }
         .chevron-icon.rotate-180 { transform: rotate(180deg); }
     </style>
@@ -147,7 +152,7 @@
     <img id="logo" src="https://davekuva.github.io/Swath-Sim/images/logo.png" alt="Logo">
     <div id="container"></div>
 
-    <div id="toggleLeftPanelBtn" class="panel-toggle">Satellites</div>
+    <div id="toggleLeftPanelBtn" class="panel-toggle">Control panel</div>
 
     <div id="satellitePanel" class="slide-panel p-0">
         <div class="p-6 pb-4 flex justify-between items-center flex-shrink-0 relative">
@@ -161,35 +166,27 @@
                  <p class="text-gray-400">Loading satellites...</p>
             </div>
 
-            <div id="constellationControl" class="space-y-2 mt-4 pt-4 border-t border-gray-700">
+            <div id="constellationControl" class="space-y-3 mt-4 pt-4 border-t border-gray-700">
                 <label for="constellationSlider" class="font-bold text-sm">Hyperfield constellation size: <span id="constellationCount">2</span></label>
                 <input type="range" id="constellationSlider" min="2" max="100" value="2" class="w-full">
-            </div>
-
-            <div class="mt-2 pt-2 border-t border-gray-700">
-                <button id="toggleControlsSectionBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
-                    <span>Display controls</span>
-                    <svg id="controlsChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                </button>
-                <div id="controlsSection" class="overflow-hidden transition-all duration-300 ease-in-out px-2" style="max-height: 0px;">
-                    <div class="py-4">
-                        <label class="font-bold text-sm">Camera mode</label>
-                        <div class="flex gap-2 mt-1">
-                            <button id="trackEarthBtn" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full">Global view</button>
-                        </div>
-                         <div id="focusControl" class="hidden mt-4">
-                             <label for="focusSelect" class="font-bold text-sm">Focus target</label>
-                             <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"></select>
-                        </div>
-                    </div>
+                <button id="trackEarthBtn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full border border-gray-600">Global view</button>
+                 <div id="focusControl" class="hidden">
+                     <label for="focusSelect" class="font-bold text-sm">Focus target</label>
+                     <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"></select>
                 </div>
             </div>
-             <div class="mt-2 pt-4 border-t border-gray-700">
-                <label class="font-bold text-md px-2">Advanced visuals</label>
-                <div class="px-2 py-2">
-                    <div class="flex items-center justify-between pt-3"><label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast forward (1s=1min)</label><label class="toggle-switch"><input type="checkbox" id="timeWarpToggle"><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/night swath only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
-                    <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show satellite beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
+            
+             <div class="mt-2 pt-2 border-t border-gray-700">
+                <button id="toggleAdvancedVisualsBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
+                    <span>Advanced visuals</span>
+                    <svg id="advancedVisualsChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="advancedVisualsSection" class="overflow-hidden transition-all duration-300 ease-in-out px-2" style="max-height: 0px;">
+                    <div class="py-2">
+                        <div class="flex items-center justify-between pt-3"><label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast forward (1s=1min)</label><label class="toggle-switch"><input type="checkbox" id="timeWarpToggle"><span class="slider"></span></label></div>
+                        <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/night swath only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
+                        <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show satellite beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -227,10 +224,10 @@
         const timeWarpToggle = document.getElementById('timeWarpToggle');
         const dayNightSwathToggle = document.getElementById('dayNightSwathToggle');
         const beamsToggle = document.getElementById('beamsToggle');
-        const toggleControlsSectionBtn = document.getElementById('toggleControlsSectionBtn');
-        const controlsSection = document.getElementById('controlsSection');
-        const controlsChevron = document.getElementById('controlsChevron');
-        
+        const toggleAdvancedVisualsBtn = document.getElementById('toggleAdvancedVisualsBtn');
+        const advancedVisualsSection = document.getElementById('advancedVisualsSection');
+        const advancedVisualsChevron = document.getElementById('advancedVisualsChevron');
+
         let scene, camera, renderer, controls, directionalLight;
         let earth, clouds, atmosphere;
         const trackedSatellites = {};
@@ -317,10 +314,10 @@
             dayNightSwathToggle.addEventListener('change', (e) => { enforceDayNightSwath = e.target.checked; });
             beamsToggle.addEventListener('change', (e) => { showBeams = e.target.checked; });
 
-            toggleControlsSectionBtn.addEventListener('click', () => {
-                const isOpen = controlsSection.style.maxHeight !== '0px';
-                controlsSection.style.maxHeight = isOpen ? '0px' : controlsSection.scrollHeight + 'px';
-                controlsChevron.classList.toggle('rotate-180', !isOpen);
+            toggleAdvancedVisualsBtn.addEventListener('click', () => {
+                const isOpen = advancedVisualsSection.style.maxHeight !== '0px';
+                advancedVisualsSection.style.maxHeight = isOpen ? '0px' : advancedVisualsSection.scrollHeight + 'px';
+                advancedVisualsChevron.classList.toggle('rotate-180', !isOpen);
             });
            
             satellitePanel.addEventListener('click', (e) => {
@@ -353,10 +350,15 @@
             animate();
         }
         
-        function toSentenceCase(str) {
+        function formatSatelliteName(str) {
             if (!str) return '';
-            const words = str.split('-');
-            return words.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join('-');
+            const parts = str.trim().split('-');
+            if (parts.length > 1) {
+                const baseName = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                const designation = parts.slice(1).join('-').toUpperCase();
+                return `${baseName}-${designation}`;
+            }
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
         }
 
         async function initializeSatellites() {
@@ -394,7 +396,7 @@
                 if (result.status === 'success') {
                     const { noradId, tleData } = result;
                     const sat = trackedSatellites[noradId];
-                    const newName = toSentenceCase(tleData[0]);
+                    const newName = formatSatelliteName(tleData[0]);
                     console.log(`Updating ${noradId} with new TLE for ${newName}`);
                     sat.satrec = satellite.twoline2satrec(tleData[1], tleData[2]);
                     sat.tleName = newName;
@@ -552,7 +554,7 @@
                 
                 const isHyperfield = sat.tleName.toLowerCase().includes('hyperfield');
                 const swathControlsHTML = isHyperfield ? `
-                    <div class="mt-2 pt-2 border-t border-gray-700 space-y-2">
+                    <div class="mt-2 pt-2 space-y-2">
                         <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Show live swath</label><label class="toggle-switch"><input type="checkbox" class="swath-toggle" data-id="${id}" ${sat.isSwathVisible ? 'checked' : ''}><span class="slider"></span></label></div>
                         <div class="flex items-center justify-between"><label class="text-sm text-gray-400">Record swath path</label><label class="toggle-switch"><input type="checkbox" class="record-toggle" data-id="${id}" ${sat.isSwathRecording ? 'checked' : ''}><span class="slider"></span></label></div>
                     </div>` : '';
@@ -607,14 +609,12 @@
         function setCameraMode(mode) {
             cameraMode = mode;
             if (mode === 'earth') {
-                trackEarthBtn.classList.replace('bg-gray-700', 'bg-sky-600');
-                trackEarthBtn.classList.replace('hover:bg-gray-700', 'hover:bg-sky-700');
+                trackEarthBtn.classList.replace('bg-gray-800', 'bg-gray-600');
                 focusControl.classList.add('hidden');
                 constellationControl.classList.remove('hidden');
                 if(focusedSatelliteId) setFocusedSatellite("");
             } else {
-                 trackEarthBtn.classList.replace('bg-sky-600', 'bg-gray-700');
-                 trackEarthBtn.classList.replace('hover:bg-sky-700', 'hover:bg-gray-700');
+                 trackEarthBtn.classList.replace('bg-gray-600', 'bg-gray-800');
                  focusControl.classList.remove('hidden');
                  const sat = trackedSatellites[focusedSatelliteId];
                  const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
@@ -665,7 +665,9 @@
             const now = simulationTime;
             const gmst = satellite.gstime(now);
             
-            earth.rotation.y = gmst; atmosphere.rotation.y = gmst; clouds.rotation.y = gmst * 0.95;
+            earth.rotation.y = gmst; 
+            if(atmosphere) atmosphere.rotation.y = gmst; 
+            if(clouds) clouds.rotation.y = gmst * 0.95;
             
             const sunPosition = calculateSunPosition(now);
             directionalLight.position.copy(sunPosition);
