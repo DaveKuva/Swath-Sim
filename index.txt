@@ -173,13 +173,6 @@
         #advancedControlsChevron.rotate-180 {
             transform: rotate(180deg);
         }
-        /* Mobile-specific styles */
-        @media (max-width: 768px) {
-            .panel-toggle {
-                padding: 1.5rem 0.75rem;
-                font-size: 1.1rem;
-            }
-        }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -319,7 +312,6 @@
         let simulationTime;
         let isTimeWarping = false;
         const TIME_WARP_FACTOR = 60;
-        const isMobile = window.matchMedia("(max-width: 768px)").matches;
         
         let cameraTransitionState = 'idle';
         let cameraTransitionProgress = 0;
@@ -383,18 +375,10 @@
             trackEarthBtn.addEventListener('click', () => setCameraMode('earth'));
             trackSatelliteBtn.addEventListener('click', () => setCameraMode('satellite'));
             focusSelect.addEventListener('change', (e) => setFocusedSatellite(e.target.value));
-
-            // Mobile-friendly touch events
-            const toggleLeft = () => satellitePanel.classList.toggle('open');
-            const toggleRight = () => cameraPanel.classList.toggle('open');
-            toggleLeftPanelBtn.addEventListener('click', toggleLeft);
-            toggleLeftPanelBtn.addEventListener('touchstart', toggleLeft);
-            toggleRightPanelBtn.addEventListener('click', toggleRight);
-            toggleRightPanelBtn.addEventListener('touchstart', toggleRight);
-            
+            toggleLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.toggle('open'));
+            toggleRightPanelBtn.addEventListener('click', () => cameraPanel.classList.toggle('open'));
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
             closeRightPanelBtn.addEventListener('click', () => cameraPanel.classList.remove('open'));
-            
             constellationSlider.addEventListener('input', (e) => {
                 const size = parseInt(e.target.value, 10);
                 constellationCount.textContent = size;
@@ -724,7 +708,7 @@
         function createOrbit(satrec) {
             const points = [];
             const orbitalPeriod = (2 * Math.PI) / satrec.no;
-            const segments = isMobile ? 512 : 1024;
+            const segments = 1024;
             const epochDate = new Date((satrec.jdsatepoch - 2440587.5) * 86400000);
 
             for (let i = 0; i <= segments; i++) {
@@ -744,7 +728,7 @@
 
             const lineMaterial = new LineMaterial({
                 color: 0xffffff,
-                linewidth: isMobile ? 3 : 2, // Thicker on mobile
+                linewidth: 2, // in pixels
                 transparent: true,
                 opacity: 0.5,
                 resolution: new THREE.Vector2(window.innerWidth, window.innerHeight)
@@ -1023,30 +1007,29 @@
                                 }
 
                                 const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
-                                if (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > 0.0001) {
-                                    while (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
-                                        const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
-                                        const snapshotPosition3D = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
-                                        
-                                        const isSnapshotDaySide = snapshotPosition3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
-                                        if (!enforceDayNightSwath || isSnapshotDaySide) {
-                                            const snapshot = createSwath();
-                                            snapshot.visible = true;
-                                            const surfacePosition = snapshotPosition3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
-                                            snapshot.position.copy(surfacePosition);
-                                            const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-                                            snapshot.up.copy(satVelocityVector);
-                                            snapshot.lookAt(earth.position);
-                                            const color = (instance.swathPath.length % 2 === 0) ? 0xffff00 : 0xffa500;
-                                            snapshot.material.color.setHex(color);
-                                            earth.worldToLocal(snapshot.position);
-                                            const earthInverseQuaternion = earth.quaternion.clone().invert();
-                                            snapshot.quaternion.premultiply(earthInverseQuaternion);
-                                            earth.add(snapshot);
-                                            instance.swathPath.push(snapshot);
-                                        }
-                                        instance.lastSnapshotPosition.copy(snapshotPosition3D);
+                                // Use a single IF instead of a WHILE loop to prevent jumps
+                                if (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
+                                    const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
+                                    const snapshotPosition3D = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
+                                    
+                                    const isSnapshotDaySide = snapshotPosition3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
+                                    if (!enforceDayNightSwath || isSnapshotDaySide) {
+                                        const snapshot = createSwath();
+                                        snapshot.visible = true;
+                                        const surfacePosition = snapshotPosition3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
+                                        snapshot.position.copy(surfacePosition);
+                                        const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
+                                        snapshot.up.copy(satVelocityVector);
+                                        snapshot.lookAt(earth.position);
+                                        const color = (instance.swathPath.length % 2 === 0) ? 0xffff00 : 0xffa500;
+                                        snapshot.material.color.setHex(color);
+                                        earth.worldToLocal(snapshot.position);
+                                        const earthInverseQuaternion = earth.quaternion.clone().invert();
+                                        snapshot.quaternion.premultiply(earthInverseQuaternion);
+                                        earth.add(snapshot);
+                                        instance.swathPath.push(snapshot);
                                     }
+                                    instance.lastSnapshotPosition.copy(snapshotPosition3D);
                                 }
                             }
                         }
