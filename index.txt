@@ -16,9 +16,9 @@
     <style>
         @font-face {
             font-family: 'FKGroteskSemiMono';
-            /* Corrected to use the raw GitHub content URL */
-            src: url('https://github.com/DaveKuva/Swath-Sim/raw/refs/heads/main/Font/FKGroteskSemiMono-Regular.woff2') format('woff2'),
-                 url('https://github.com/DaveKuva/Swath-Sim/raw/fccf470a3e07c1c9c9d873cb7e996fcac0826947/Font/FKGroteskSemiMono-Regular.woff') format('woff');
+            /* Use the direct raw.githubusercontent.com links to avoid CORS redirect issues */
+            src: url('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/Font/FKGroteskSemiMono-Regular.woff2') format('woff2'),
+                 url('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/fccf470a3e07c1c9c9d873cb7e996fcac0826947/Font/FKGroteskSemiMono-Regular.woff') format('woff');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -934,6 +934,7 @@
     </script>
 </body>
 </html>
+
 
 
 
