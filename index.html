@@ -11,6 +11,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>3D Satellite Tracker & Analyzer</title>
+
+    <!-- Web App Manifest & PWA Tags for Borderless Experience -->
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIjNEIFNhdGVsbGl0ZSBUcmFja2VyICYgQW5hbHl6ZXIiLAogICJzaG9ydF9uYW1lIjogIlNhdFRyYWNrZXIiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBhbmQgYW5hbHl6ZXIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9'>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SatTracker">
+    <link rel="apple-touch-icon" href="https://davekuva.github.io/Swath-Sim/images/logo.png">
+    <meta name="theme-color" content="#0A0A0A">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @font-face {
@@ -665,7 +674,7 @@
             const now = simulationTime;
             const gmst = satellite.gstime(now);
             
-            earth.rotation.y = gmst; 
+            if(earth) earth.rotation.y = gmst; 
             if(atmosphere) atmosphere.rotation.y = gmst; 
             if(clouds) clouds.rotation.y = gmst * 0.95;
             
