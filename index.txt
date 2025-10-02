@@ -10,13 +10,13 @@
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>3D Satellite Tracker & Analyzer</title>
+    <title>Kuva Space</title>
 
     <!-- Web App Manifest & PWA Tags for Borderless Experience -->
-    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIjNEIFNhdGVsbGl0ZSBUcmFja2VyICYgQW5hbHl6ZXIiLAogICJzaG9ydF9uYW1lIjogIlNhdFRyYWNrZXIiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBhbmQgYW5hbHl6ZXIuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciCiAgICB9CiAgXQp9'>
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBmcm9tIEt1dmEgU3BhY2UuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9CiAgXQp9'>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="SatTracker">
+    <meta name="apple-mobile-web-app-title" content="Kuva Space">
     <link rel="apple-touch-icon" href="https://davekuva.github.io/Swath-Sim/images/logo.png">
     <meta name="theme-color" content="#0A0A0A">
 
@@ -212,6 +212,29 @@
         void main() { float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0); gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity; }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
+    
+    <script>
+        // Minimal Service Worker to enable PWA installability
+        if ('serviceWorker' in navigator) {
+            const sw_string = `
+                self.addEventListener('fetch', function(event) {
+                    // A very simple service worker that does nothing but exist.
+                    // This is enough to trigger the PWA install prompt.
+                });
+            `;
+            const blob = new Blob([sw_string], {type: 'application/javascript'});
+            const sw_url = URL.createObjectURL(blob);
+
+            navigator.serviceWorker.register(sw_url)
+                .then(function(registration) {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(function(error) {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+    
     <script type="module">
         import * as THREE from 'https://cdn.skypack.dev/three@0.128.0';
         import { OrbitControls } from 'https://cdn.skypack.dev/three@0.128.0/examples/jsm/controls/OrbitControls.js';
