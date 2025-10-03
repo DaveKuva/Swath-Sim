@@ -259,6 +259,12 @@
         const toggleAdvancedVisualsBtn = document.getElementById('toggleAdvancedVisualsBtn');
         const advancedVisualsSection = document.getElementById('advancedVisualsSection');
         const advancedVisualsChevron = document.getElementById('advancedVisualsChevron');
+        
+        let pressStartTime = 0;
+        let startX = 0;
+        let startY = 0;
+        const MAX_PRESS_DURATION = 200; // ms
+        const MAX_MOVE_DISTANCE = 10; // pixels
 
         let scene, camera, renderer, controls, directionalLight;
         let earth, clouds, atmosphere;
@@ -288,8 +294,8 @@
         const SAT_COLORS = [0xff6347, 0x9370db, 0x4682b4, 0x32cd32, 0xffd700, 0x00fa9a, 0xff4500, 0x1e90ff];
         const SWATH_SNAPSHOT_DISTANCE_KM = 45; 
         const DEFAULT_TLES = {
-            '60562': ['Hyperfield-1A', '1 60562U 24149CY  25275.17838378  .00015483  00000+0  59215-3 0  9990', '2 60562  97.4051 352.0582 0006760 135.5837 224.5945 15.26655742 62612'],
-            '64552': ['Hyperfield-1B', '1 64552U 25135AA  25275.16200742  .00011417  00000+0  54629-3 0  9993', '2 64552  97.4477  28.1382 0002298 105.9116 254.2371 15.19133534 15667']
+            '60562': ['Hyperfield-1A', '1 60562U 24149CY  25273.14645047  .00015321  00000+0  58728-3 0  9993', '2 60562  97.4049 350.0439 0006684 141.6331 218.5385 15.26583021 62307'],
+            '64552': ['Hyperfield-1B', '1 64552U 25135AA  25273.18590572  .00010550  00000+0  50593-3 0  9999', '2 64552  97.4478  26.1903 0002229 109.4879 250.6596 15.19077417 15367']
         };
 
         function init() {
@@ -322,6 +328,24 @@
 
             toggleLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.toggle('open'));
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
+
+            container.addEventListener('pointerdown', (e) => {
+                pressStartTime = Date.now();
+                startX = e.clientX;
+                startY = e.clientY;
+            });
+
+            container.addEventListener('pointerup', (e) => {
+                const pressDuration = Date.now() - pressStartTime;
+                const distanceX = Math.abs(e.clientX - startX);
+                const distanceY = Math.abs(e.clientY - startY);
+                
+                if (pressDuration < MAX_PRESS_DURATION && distanceX < MAX_MOVE_DISTANCE && distanceY < MAX_MOVE_DISTANCE) {
+                    if (satellitePanel.classList.contains('open')) {
+                        satellitePanel.classList.remove('open');
+                    }
+                }
+            });
 
             constellationSlider.addEventListener('input', (e) => {
                 const size = parseInt(e.target.value, 10);
