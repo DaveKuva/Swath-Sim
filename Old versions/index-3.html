@@ -209,10 +209,7 @@
     </script>
     <script id="fragmentShader" type="x-shader/x-fragment">
         varying vec3 vNormal;
-        void main() { 
-            float intensity = pow(0.8 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0); 
-            gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 2.0; 
-        }
+        void main() { float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0); gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity; }
     </script>
      <script id="cityLightsVertexShader" type="x-shader/x-vertex">
         varying vec2 vUv;
@@ -230,9 +227,9 @@
         varying vec3 vWorldNormal;
         void main() {
             float intensity = dot(vWorldNormal, normalize(sunDirection));
-            float night = smoothstep(0.25, -0.25, intensity);
+            float night = smoothstep(0.15, -0.05, intensity); // Softer, more gradual transition
             vec4 texColor = texture2D(cityTexture, vUv);
-            gl_FragColor = vec4(texColor.rgb * 1.5, texColor.a * night);
+            gl_FragColor = vec4(texColor.rgb, texColor.a * night);
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
@@ -242,6 +239,7 @@
         if ('serviceWorker' in navigator) {
             const sw_string = `
                 self.addEventListener('fetch', function(event) {
+                    // A very simple service worker that does nothing but exist.
                     // This is enough to trigger the PWA install prompt.
                 });
             `;
@@ -331,7 +329,6 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-            renderer.outputColorSpace = THREE.SRGBColorSpace;
             container.appendChild(renderer.domElement);
 
             controls = new OrbitControls(camera, renderer.domElement);
@@ -494,13 +491,13 @@
         function createEarth() {
             const textureLoader = new THREE.TextureLoader();
             const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 32, 32);
-            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/2_no_clouds_4k.jpg') }));
+            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg') }));
             scene.add(earth);
 
             const lightsGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.002, 32, 32);
             const lightsMat = new THREE.ShaderMaterial({
                 uniforms: {
-                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/land_lights_16384.png') },
+                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/refs/heads/main/images/land_lights_16384.png') },
                     sunDirection: { value: new THREE.Vector3() }
                 },
                 vertexShader: document.getElementById('cityLightsVertexShader').textContent,
@@ -513,9 +510,9 @@
             scene.add(cityLights);
 
             const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
-            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
+            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
             scene.add(clouds);
-            const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.03, 32, 32);
+            const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.02, 32, 32);
             const atmoMat = new THREE.ShaderMaterial({ vertexShader: document.getElementById('vertexShader').textContent, fragmentShader: document.getElementById('fragmentShader').textContent, blending: THREE.AdditiveBlending, side: THREE.BackSide });
             atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
             scene.add(atmosphere);
@@ -540,25 +537,16 @@
 
         function getJulianDate(date) { return (date.getTime() / 86400000) + 2440587.5; }
 
-        function calculateAccurateSunPosition(date) {
-            const toRad = Math.PI / 180;
+        function calculateSunPosition(date) {
             const julianDate = getJulianDate(date);
-            const T = (julianDate - 2451545.0) / 36525;
-            let L0 = 280.46646 + T * (36000.76983 + T * 0.0003032);
-            L0 = L0 % 360;
-            let M = 357.52911 + T * (35999.05029 - T * 0.0001537);
-            M = M % 360;
-            const Mrad = M * toRad;
-            const C = (1.914602 - T * (0.004817 + 0.000014 * T)) * Math.sin(Mrad) + (0.019993 - T * 0.000101) * Math.sin(2 * Mrad) + 0.000289 * Math.sin(3 * Mrad);
-            const sunTrueLongitude = L0 + C;
-            const sunTrueLongitudeRad = sunTrueLongitude * toRad;
-            let epsilon = 23 + (26 / 60) + (21.448 / 3600) - T * ((46.8150 / 3600) + T * ((0.00059 / 3600) - T * (0.001813 / 3600)));
-            const epsilonRad = epsilon * toRad;
-            const sunX = Math.cos(sunTrueLongitudeRad);
-            const sunY = Math.sin(sunTrueLongitudeRad) * Math.cos(epsilonRad);
-            const sunZ = Math.sin(sunTrueLongitudeRad) * Math.sin(epsilonRad);
-            const distanceScale = 100;
-            return new THREE.Vector3(sunX * distanceScale, sunZ * distanceScale, -sunY * distanceScale);
+            const d = julianDate - 2451545.0;
+            const meanLongitude = (280.460 + 0.9856474 * d) % 360;
+            const meanAnomaly = (357.528 + 0.9856003 * d) % 360;
+            const eclipticLongitude = meanLongitude + 1.915 * Math.sin(meanAnomaly * Math.PI / 180) + 0.020 * Math.sin(2 * meanAnomaly * Math.PI / 180);
+            const obliquity = (23.439 - 0.0000004 * d) * Math.PI / 180;
+            const lonRad = eclipticLongitude * Math.PI / 180;
+            const sunX = Math.cos(lonRad), sunY = Math.sin(lonRad) * Math.cos(obliquity), sunZ = Math.sin(lonRad) * Math.sin(obliquity);
+            return new THREE.Vector3(sunX * 100, sunY * 100, sunZ * 100);
         }
 
         function addSatellite(noradId, tleData) {
@@ -775,7 +763,7 @@
             if(clouds) clouds.rotation.y = gmst * 0.95;
             if(cityLights) cityLights.rotation.y = gmst;
             
-            const sunPosition = calculateAccurateSunPosition(now);
+            const sunPosition = calculateSunPosition(now);
             directionalLight.position.copy(sunPosition);
             if (cityLights) {
                  cityLights.material.uniforms.sunDirection.value.copy(sunPosition);
@@ -879,7 +867,6 @@
             handleCamera(deltaTime);
             controls.update();
             if (camera.position.length() < EARTH_RADIUS_SCALED * 1.05) camera.position.setLength(EARTH_RADIUS_SCALED * 1.05);
-            
             renderer.render(scene, camera);
         }
 
@@ -927,6 +914,10 @@
     </script>
 </body>
 </html>
+
+
+
+
 
 
 
