@@ -165,14 +165,22 @@
 
     <div id="satellitePanel" class="slide-panel p-0">
         <div class="p-6 pb-4 flex justify-between items-center flex-shrink-0 relative">
-            <h2 class="text-xl font-bold">Satellite menu</h2>
+            <h2 class="text-xl font-bold">Control panel</h2>
             <button id="closeLeftPanelBtn" class="close-panel-btn top-4 right-4 text-2xl">&times;</button>
         </div>
 
         <div class="overflow-y-auto px-6 pb-6">
             <p class="text-sm text-gray-400 mb-4">Tap a satellite to focus on it. Expand the sections below to access more controls.</p>
-            <div id="satelliteList" class="space-y-3 pr-2 border-b border-gray-700 pb-4">
-                 <p class="text-gray-400">Loading satellites...</p>
+            <div>
+                <button id="toggleSatelliteListBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
+                    <span>Satellites</span>
+                    <svg id="satelliteListChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="satelliteListContainer" class="overflow-hidden transition-all duration-300 ease-in-out px-2">
+                    <div id="satelliteList" class="space-y-3 pt-2">
+                         <p class="text-gray-400">Loading satellites...</p>
+                    </div>
+                </div>
             </div>
 
             <div id="constellationControl" class="space-y-3 mt-4 pt-4 border-t border-gray-700">
@@ -282,6 +290,9 @@
         const toggleAdvancedVisualsBtn = document.getElementById('toggleAdvancedVisualsBtn');
         const advancedVisualsSection = document.getElementById('advancedVisualsSection');
         const advancedVisualsChevron = document.getElementById('advancedVisualsChevron');
+        const toggleSatelliteListBtn = document.getElementById('toggleSatelliteListBtn');
+        const satelliteListContainer = document.getElementById('satelliteListContainer');
+        const satelliteListChevron = document.getElementById('satelliteListChevron');
         
         let pressStartTime = 0;
         let startX = 0;
@@ -400,6 +411,12 @@
                 advancedVisualsChevron.classList.toggle('rotate-180', !isOpen);
             });
            
+            toggleSatelliteListBtn.addEventListener('click', () => {
+                const isOpen = satelliteListContainer.style.maxHeight !== '0px' && satelliteListContainer.style.maxHeight;
+                satelliteListContainer.style.maxHeight = isOpen ? '0px' : satelliteListContainer.scrollHeight + 'px';
+                satelliteListChevron.classList.toggle('rotate-180');
+            });
+
             satellitePanel.addEventListener('click', (e) => {
                 const satItem = e.target.closest('.sat-item-clickable');
                 if (satItem && satItem.dataset.id) {
@@ -428,6 +445,10 @@
             setCameraMode('earth');
             await initializeSatellites();
             animate();
+
+            // Set satellite list to be open by default
+            satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
+            satelliteListChevron.classList.add('rotate-180');
         }
         
         function formatSatelliteName(str) {
@@ -488,7 +509,6 @@
             }
             if (needsUiUpdate) updateSatelliteListUI();
             updateIndicator.remove();
-            return needsUiUpdate;
         }
         
         function createEarth() {
@@ -564,7 +584,7 @@
         function addSatellite(noradId, tleData) {
             if (!tleData) return;
             const tleName = tleData[0];
-            const satrec = satellite.twoline2satrec(tleData[1], tleData[2]);
+            const satrec = satellite.twoline2satrec(tleData[1].trim(), tleData[2].trim());
             const mainSat = createSatelliteInstance(true);
             trackedSatellites[noradId] = { satrec, tleName, color: mainSat.mesh.material.color.getHex(), orbit: createOrbit(satrec), instances: [mainSat], isVisible: true, isSwathVisible: false, isSwathRecording: false };
             scene.add(trackedSatellites[noradId].orbit);
@@ -686,6 +706,12 @@
                 focusSelect.appendChild(option);
             });
             focusSelect.value = focusedSatelliteId || "";
+            
+            // After populating, if the panel is open, resize it to fit new content.
+            const isOpen = satelliteListContainer.style.maxHeight !== '0px' && satelliteListContainer.style.maxHeight;
+            if (isOpen) {
+                satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
+            }
         }
 
         function updateFocusedSatInfoUI() {
@@ -729,16 +755,6 @@
             updateFocusedSatInfoUI();
         }
         
-        function updateFocusedSatelliteState(noradId) {
-            focusedSatelliteId = noradId;
-            const sat = trackedSatellites[focusedSatelliteId];
-            const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
-            
-            if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
-            if (focusSelect.value != (noradId || "")) focusSelect.value = noradId || "";
-            updateFocusedSatInfoUI();
-        }
-        
         function setFocusedSatellite(noradId) {
             if (!noradId) {
                 if (focusedSatelliteId) { 
@@ -749,11 +765,25 @@
                     transitionEndTarget.set(0, 0, 0);
                     transitionEndPosition.set(0, 15, 30);
                 }
-                updateFocusedSatelliteState(null);
+                
+                focusedSatelliteId = null;
+                const sat = trackedSatellites[focusedSatelliteId];
+                const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
+                if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
+                if (focusSelect.value != "") focusSelect.value = "";
+                updateFocusedSatInfoUI();
                 return;
             }
+
             if (noradId === focusedSatelliteId && cameraTransitionState === 'idle') return;
-            updateFocusedSatelliteState(noradId);
+
+            focusedSatelliteId = noradId;
+            const sat = trackedSatellites[focusedSatelliteId];
+            const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
+            if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
+            if (focusSelect.value != (noradId || "")) focusSelect.value = noradId || "";
+            updateFocusedSatInfoUI();
+            
             cameraTransitionState = 'toSat';
             cameraTransitionProgress = 0;
             transitionStartPosition.copy(camera.position);
