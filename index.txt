@@ -211,6 +211,27 @@
         varying vec3 vNormal;
         void main() { float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0); gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity; }
     </script>
+     <script id="cityLightsVertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        varying vec3 vWorldNormal;
+        void main() {
+            vUv = uv;
+            vWorldNormal = normalize(mat3(modelMatrix) * normal);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script id="cityLightsFragmentShader" type="x-shader/x-fragment">
+        uniform sampler2D cityTexture;
+        uniform vec3 sunDirection;
+        varying vec2 vUv;
+        varying vec3 vWorldNormal;
+        void main() {
+            float intensity = dot(vWorldNormal, normalize(sunDirection));
+            float night = smoothstep(0.15, -0.05, intensity); // Softer, more gradual transition
+            vec4 texColor = texture2D(cityTexture, vUv);
+            gl_FragColor = vec4(texColor.rgb, texColor.a * night);
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.1.3/satellite.min.js"></script>
     
     <script>
@@ -267,7 +288,7 @@
         const MAX_MOVE_DISTANCE = 10; // pixels
 
         let scene, camera, renderer, controls, directionalLight;
-        let earth, clouds, atmosphere;
+        let earth, clouds, atmosphere, cityLights;
         const trackedSatellites = {};
         let cameraMode = 'earth';
         let focusedSatelliteId = null;
@@ -315,8 +336,8 @@
             controls.maxDistance = 150;
             
             setCameraMode('earth'); 
-            scene.add(new THREE.AmbientLight(0x222222));
-            directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            scene.add(new THREE.AmbientLight(0x111111));
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
             scene.add(directionalLight);
 
             createSkybox();
@@ -472,6 +493,22 @@
             const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 32, 32);
             earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg') }));
             scene.add(earth);
+
+            const lightsGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.002, 32, 32);
+            const lightsMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/refs/heads/main/images/land_lights_16384.png') },
+                    sunDirection: { value: new THREE.Vector3() }
+                },
+                vertexShader: document.getElementById('cityLightsVertexShader').textContent,
+                fragmentShader: document.getElementById('cityLightsFragmentShader').textContent,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                depthTest: false
+            });
+            cityLights = new THREE.Mesh(lightsGeo, lightsMat);
+            scene.add(cityLights);
+
             const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
             clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
             scene.add(clouds);
@@ -484,7 +521,7 @@
         function createSkybox() {
             const texture = new THREE.TextureLoader().load('https://s3-us-west-2.amazonaws.com/s.cdpn.io/141228/starfield.png');
             const skyGeo = new THREE.SphereGeometry(1000, 32, 32);
-            const skyMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, color: 0x5f5f5f });
+            const skyMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, color: 0x999999 });
             scene.add(new THREE.Mesh(skyGeo, skyMat));
         }
         
@@ -724,9 +761,13 @@
             if(earth) earth.rotation.y = gmst; 
             if(atmosphere) atmosphere.rotation.y = gmst; 
             if(clouds) clouds.rotation.y = gmst * 0.95;
+            if(cityLights) cityLights.rotation.y = gmst;
             
             const sunPosition = calculateSunPosition(now);
             directionalLight.position.copy(sunPosition);
+            if (cityLights) {
+                 cityLights.material.uniforms.sunDirection.value.copy(sunPosition);
+            }
             
             for (const id in trackedSatellites) {
                 const sat = trackedSatellites[id];
@@ -873,4 +914,10 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
 
