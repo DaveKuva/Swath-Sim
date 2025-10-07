@@ -13,12 +13,12 @@
     <title>Kuva Space</title>
 
     <!-- Web App Manifest & PWA Tags for Borderless Experience -->
-    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBmcm9tIEt1dmEgU3BhY2UuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8va3V2YS1zaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9LAogICAgewogICAgICAic3JjIjogImh0dHBzOi8vZGF2ZWt1dmEuZ2l0aHViLmlvL2t1dmEtc2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfQogIF0KfQ=='>
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLCJkZXNjcmlwdGlvbiI6IkFuIGludGVyYWN0aXZlIDNEIHNhdGVsbGl0ZSB0cmFja2VyIGZyb20gS3V2YSBTcGFjZS4iLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55IG1hc2thYmxlIn0seyJzcmMiOiJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkgbWFza2FibGUifV19'>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kuva Space">
     <link rel="apple-touch-icon" href="https://davekuva.github.io/kuva-sim/images/logo.png">
-    <meta name="theme-color" content="#0A0A0A">
+    <meta name="theme-color" content="#000000">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -195,7 +195,7 @@
             
              <div class="mt-2 pt-2 border-t border-gray-700">
                 <button id="toggleAdvancedVisualsBtn" class="w-full text-left font-bold text-md py-2 flex justify-between items-center hover:bg-gray-800 rounded-md px-2">
-                    <span>Advanced visuals</span>
+                    <span>Advanced settings</span>
                     <svg id="advancedVisualsChevron" class="w-4 h-4 transition-transform duration-300 chevron-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div id="advancedVisualsSection" class="overflow-hidden transition-all duration-300 ease-in-out px-2" style="max-height: 0px;">
@@ -203,6 +203,7 @@
                         <div class="flex items-center justify-between pt-3"><label for="timeWarpToggle" class="font-bold text-sm text-gray-300">Fast forward (1s=1min)</label><label class="toggle-switch"><input type="checkbox" id="timeWarpToggle"><span class="slider"></span></label></div>
                         <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/night swath only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
                         <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show satellite beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
+                        <div class="flex items-center justify-between pt-3"><label for="demoModeToggle" class="font-bold text-sm text-gray-300">Demo Sunlit Pass</label><label class="toggle-switch"><input type="checkbox" id="demoModeToggle"><span class="slider"></span></label></div>
                     </div>
                 </div>
             </div>
@@ -222,8 +223,8 @@
         uniform float uOpacity;
         varying vec3 vNormal;
         void main() { 
-            float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0); 
-            vec4 color = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 2.0;
+            float intensity = pow(0.5 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 1.5); 
+            vec4 color = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 1.5;
             gl_FragColor = vec4(color.rgb, color.a * uOpacity);
         }
     </script>
@@ -298,6 +299,7 @@
         const toggleSatelliteListBtn = document.getElementById('toggleSatelliteListBtn');
         const satelliteListContainer = document.getElementById('satelliteListContainer');
         const satelliteListChevron = document.getElementById('satelliteListChevron');
+        const demoModeToggle = document.getElementById('demoModeToggle');
         
         let pressStartTime = 0;
         let startX = 0;
@@ -314,6 +316,8 @@
         let clock;
         let simulationTime;
         let isTimeWarping = false;
+        let isDemoMode = false;
+        let demoTimeOffset = 0;
         const TIME_WARP_FACTOR = 60;
         
         let cameraTransitionState = 'idle';
@@ -366,6 +370,30 @@
             trackEarthBtn.addEventListener('click', () => setCameraMode('earth'));
             focusSelect.addEventListener('change', (e) => setFocusedSatellite(e.target.value));
 
+            demoModeToggle.addEventListener('change', (e) => {
+                isDemoMode = e.target.checked;
+                if (isDemoMode) {
+                    const demoSatId = '60562'; // Use Hyperfield-1A for the demo
+                    if (trackedSatellites[demoSatId]) {
+                        const nextPass = findNextSunlitPass(trackedSatellites[demoSatId].satrec);
+                        const demoStartTime = new Date(nextPass.getTime() + 10 * 60 * 1000); // 10 min offset
+                        const now = new Date();
+                        demoTimeOffset = demoStartTime.getTime() - now.getTime();
+                    }
+                } else {
+                    demoTimeOffset = 0;
+                    // When turning off demo mode, also turn off swath recording for all satellites.
+                    for (const id in trackedSatellites) {
+                        const sat = trackedSatellites[id];
+                        if (sat.isSwathRecording) {
+                            sat.isSwathRecording = false;
+                            clearSwathPath(id);
+                        }
+                    }
+                    updateSatelliteListUI(); // Update UI to reflect the change in toggles
+                }
+            });
+
             toggleLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.toggle('open'));
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
 
@@ -396,14 +424,15 @@
             timeWarpToggle.addEventListener('change', (e) => {
                 isTimeWarping = e.target.checked;
                 if (!isTimeWarping) {
+                    // When time warp is turned off, also turn off swath recording for all satellites.
                     for (const id in trackedSatellites) {
                         const sat = trackedSatellites[id];
                         if (sat.isSwathRecording) {
-                            clearSwathPath(id);
                             sat.isSwathRecording = false;
+                            clearSwathPath(id);
                         }
                     }
-                    updateSatelliteListUI();
+                    updateSatelliteListUI(); // Update UI to reflect the change in toggles
                 }
             });
 
@@ -519,13 +548,13 @@
         function createEarth() {
             const textureLoader = new THREE.TextureLoader();
             const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 32, 32);
-            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg') }));
+            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/2_no_clouds_4k.jpg') }));
             scene.add(earth);
 
             const lightsGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.002, 32, 32);
             const lightsMat = new THREE.ShaderMaterial({
                 uniforms: {
-                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/land_lights_16384.png') },
+                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/land_lights_16384.png') },
                     sunDirection: { value: new THREE.Vector3() }
                 },
                 vertexShader: document.getElementById('cityLightsVertexShader').textContent,
@@ -538,7 +567,7 @@
             scene.add(cityLights);
 
             const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
-            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
+            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
             scene.add(clouds);
             const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.05, 32, 32);
             const atmoMat = new THREE.ShaderMaterial({ 
@@ -601,7 +630,7 @@
             const tleName = tleData[0];
             const satrec = satellite.twoline2satrec(tleData[1].trim(), tleData[2].trim());
             const mainSat = createSatelliteInstance(true);
-            trackedSatellites[noradId] = { satrec, tleName, color: mainSat.mesh.material.color.getHex(), orbit: createOrbit(satrec), instances: [mainSat], isVisible: true, isSwathVisible: false, isSwathRecording: false };
+            trackedSatellites[noradId] = { satrec, tleName, color: mainSat.mesh.material.color.getHex(), orbit: createOrbit(satrec), instances: [mainSat], isVisible: true, isSwathVisible: true, isSwathRecording: false };
             scene.add(trackedSatellites[noradId].orbit);
         }
 
@@ -805,22 +834,57 @@
             transitionStartTarget.copy(controls.target);
         }
 
+        function findNextSunlitPass(satrec) {
+            const startTime = new Date();
+            // Check every 30 seconds for the next ~100 minutes (a full orbit)
+            for (let i = 0; i < 200; i++) {
+                const checkTime = new Date(startTime.getTime() + i * 30 * 1000);
+                const sunPos = calculateAccurateSunPosition(checkTime);
+                const posVel = satellite.propagate(satrec, checkTime);
+                if (posVel.position) {
+                    const satPos = new THREE.Vector3(posVel.position.x, posVel.position.z, -posVel.position.y).normalize();
+                    const sunDir = sunPos.clone().normalize();
+                    const dotProduct = satPos.dot(sunDir);
+                    // A dot product > 0 means the satellite is on the sunlit side
+                    if (dotProduct > 0.1) {
+                        return checkTime;
+                    }
+                }
+            }
+            return startTime; // Fallback
+        }
+
         function animate() {
             requestAnimationFrame(animate);
             const deltaTime = clock.getDelta();
             
-            if (isTimeWarping) simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * TIME_WARP_FACTOR * 1000);
-            else simulationTime = new Date();
-            
-            const now = simulationTime;
-            const gmst = satellite.gstime(now);
+            let satTime;
+            const realNow = new Date();
+
+            if (isDemoMode) {
+                satTime = new Date(realNow.getTime() + demoTimeOffset);
+                if(isTimeWarping) {
+                    demoTimeOffset += deltaTime * TIME_WARP_FACTOR * 1000;
+                    satTime = new Date(realNow.getTime() + demoTimeOffset);
+                }
+            } else {
+                 if (isTimeWarping) {
+                    simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * TIME_WARP_FACTOR * 1000);
+                    satTime = simulationTime;
+                } else {
+                    simulationTime = new Date();
+                    satTime = simulationTime;
+                }
+            }
+
+            const gmst = satellite.gstime(realNow);
             
             if(earth) earth.rotation.y = gmst; 
             if(atmosphere) atmosphere.rotation.y = gmst; 
             if(clouds) clouds.rotation.y = gmst * 0.95;
             if(cityLights) cityLights.rotation.y = gmst;
             
-            const sunPosition = calculateAccurateSunPosition(now);
+            const sunPosition = calculateAccurateSunPosition(satTime);
             directionalLight.position.copy(sunPosition);
             if (cityLights) {
                  cityLights.material.uniforms.sunDirection.value.copy(sunPosition);
@@ -832,7 +896,7 @@
                 const orbitalPeriod = (2 * Math.PI) / sat.satrec.no * 60000;
                 const timeOffset = orbitalPeriod / sat.instances.length;
                 const epochDate = new Date((sat.satrec.jdsatepoch - 2440587.5) * 86400000);
-                const timeSinceEpoch = now.getTime() - epochDate.getTime();
+                const timeSinceEpoch = satTime.getTime() - epochDate.getTime();
 
                 sat.instances.forEach((instance, index) => {
                     instance.mesh.visible = sat.isVisible;
@@ -999,4 +1063,6 @@
     </script>
 </body>
 </html>
+
+
 
