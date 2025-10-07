@@ -213,13 +213,18 @@
 
     <script id="vertexShader" type="x-shader/x-vertex">
         varying vec3 vNormal;
-        void main() { vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+        void main() { 
+            vNormal = normalize(normalMatrix * normal); 
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); 
+        }
     </script>
     <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform float uOpacity;
         varying vec3 vNormal;
         void main() { 
-            float intensity = pow(0.8 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0); 
-            gl_FragColor = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 2.0; 
+            float intensity = pow(0.6 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.0); 
+            vec4 color = vec4(0.3, 0.6, 1.0, 1.0) * intensity * 2.0;
+            gl_FragColor = vec4(color.rgb, color.a * uOpacity);
         }
     </script>
      <script id="cityLightsVertexShader" type="x-shader/x-vertex">
@@ -535,8 +540,18 @@
             const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
             clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
             scene.add(clouds);
-            const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.03, 32, 32);
-            const atmoMat = new THREE.ShaderMaterial({ vertexShader: document.getElementById('vertexShader').textContent, fragmentShader: document.getElementById('fragmentShader').textContent, blending: THREE.AdditiveBlending, side: THREE.BackSide });
+            const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.05, 32, 32);
+            const atmoMat = new THREE.ShaderMaterial({ 
+                uniforms: {
+                    uOpacity: { value: 1.0 }
+                },
+                vertexShader: document.getElementById('vertexShader').textContent, 
+                fragmentShader: document.getElementById('fragmentShader').textContent, 
+                blending: THREE.AdditiveBlending, 
+                side: THREE.BackSide,
+                transparent: true,
+                depthWrite: false
+            });
             atmosphere = new THREE.Mesh(atmoGeo, atmoMat);
             scene.add(atmosphere);
         }
@@ -544,7 +559,7 @@
         function createSkybox() {
             const texture = new THREE.TextureLoader().load('https://s3-us-west-2.amazonaws.com/s.cdpn.io/141228/starfield.png');
             const skyGeo = new THREE.SphereGeometry(1000, 32, 32);
-            const skyMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, color: 0x999999 });
+            const skyMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, color: 0xcccccc });
             scene.add(new THREE.Mesh(skyGeo, skyMat));
         }
         
@@ -908,6 +923,22 @@
             }
             handleCamera(deltaTime);
             controls.update();
+
+            // Smoothly fade out atmosphere when camera is close to prevent visual artifacts
+            if (atmosphere && atmosphere.material.uniforms.uOpacity) {
+                const startFadeDistance = EARTH_RADIUS_SCALED * 2.5;
+                const endFadeDistance = EARTH_RADIUS_SCALED * 1.1;
+                const camDistance = camera.position.length();
+
+                const smoothstep = (min, max, value) => {
+                    const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
+                    return x * x * (3 - 2 * x);
+                };
+
+                const opacity = smoothstep(endFadeDistance, startFadeDistance, camDistance);
+                atmosphere.material.uniforms.uOpacity.value = opacity;
+            }
+
             if (camera.position.length() < EARTH_RADIUS_SCALED * 1.05) camera.position.setLength(EARTH_RADIUS_SCALED * 1.05);
             
             renderer.render(scene, camera);
@@ -928,8 +959,19 @@
                 if (!focusedSatelliteId || !trackedSatellites[focusedSatelliteId]) { cameraTransitionState = 'idle'; return; }
                 const sat = trackedSatellites[focusedSatelliteId].instances[0];
                 transitionEndTarget.copy(sat.mesh.position);
-                const offset = new THREE.Vector3(sat.velocity.x, sat.velocity.z, -sat.velocity.y).normalize().multiplyScalar(-15.0);
-                transitionEndPosition.copy(sat.mesh.position).add(offset);
+
+                // New logic: Position camera behind and at a slight angle to the satellite
+                const direction = sat.mesh.position.clone().normalize();
+                const behindVector = direction.clone().multiplyScalar(2.5); // How far behind
+
+                // Get a stable 'side' vector perpendicular to the satellite's position and world 'up'
+                const worldUp = new THREE.Vector3(0, 1, 0);
+                const sideVector = new THREE.Vector3().crossVectors(direction, worldUp).normalize().multiplyScalar(1.0); // How far to the side
+
+                transitionEndPosition.copy(sat.mesh.position)
+                    .add(behindVector)
+                    .add(sideVector);
+
                 camera.position.copy(transitionStartPosition).lerp(transitionEndPosition, alpha);
                 controls.target.copy(transitionStartTarget).lerp(transitionEndTarget, alpha);
             } else if (cameraTransitionState === 'toEarth') {
@@ -957,6 +999,4 @@
     </script>
 </body>
 </html>
-
-
 
