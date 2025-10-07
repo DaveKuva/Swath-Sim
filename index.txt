@@ -13,7 +13,7 @@
     <title>Kuva Space</title>
 
     <!-- Web App Manifest & PWA Tags for Borderless Experience -->
-    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBmcm9tIEt1dmEgU3BhY2UuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICIxOTJ4MTkyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfSwKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9CiAgXQp9'>
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzBBMEEwQSIsCiAgInRoZW1lX2NvbG9yIjogIiMwQTBBMGEiLAogICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzYXRlbGxpdGUgdHJhY2tlciBmcm9tIEt1dmEgU3BhY2UuIiwKICAiaWNvbnMiOiBbCiAgICB7CiAgICAgICJzcmMiOiAiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8va3V2YS1zaW0vaW1hZ2VzL2xvZ28ucG5nIiwKICAgICAgInNpemVzIjogIjE5MngxOTIiLAogICAgICAidHlwZSI6ICJpbWFnZS9wbmciLAogICAgICAicHVycG9zZSI6ICJhbnkgbWFza2FibGUiCiAgICB9LAogICAgewogICAgICAic3JjIjogImh0dHBzOi8vZGF2ZWt1dmEuZ2l0aHViLmlvL2t1dmEtc2ltL2ltYWdlcy9sb2dvLnBuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInB1cnBvc2UiOiAiYW55IG1hc2thYmxlIgogICAgfQogIF0KfQ=='>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Kuva Space">
@@ -519,13 +519,13 @@
         function createEarth() {
             const textureLoader = new THREE.TextureLoader();
             const earthGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED, 32, 32);
-            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/2_no_clouds_4k.jpg') }));
+            earth = new THREE.Mesh(earthGeo, new THREE.MeshLambertMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/2_no_clouds_4k.jpg') }));
             scene.add(earth);
 
             const lightsGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.002, 32, 32);
             const lightsMat = new THREE.ShaderMaterial({
                 uniforms: {
-                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/land_lights_16384.png') },
+                    cityTexture: { value: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/Swath-Sim/main/images/land_lights_16384.png') },
                     sunDirection: { value: new THREE.Vector3() }
                 },
                 vertexShader: document.getElementById('cityLightsVertexShader').textContent,
@@ -538,7 +538,7 @@
             scene.add(cityLights);
 
             const cloudGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.005, 32, 32);
-            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/DaveKuva/kuva-sim/main/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
+            clouds = new THREE.Mesh(cloudGeo, new THREE.MeshPhongMaterial({ map: textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png'), transparent: true, opacity: 0.8 }));
             scene.add(clouds);
             const atmoGeo = new THREE.SphereGeometry(EARTH_RADIUS_SCALED * 1.05, 32, 32);
             const atmoMat = new THREE.ShaderMaterial({ 
