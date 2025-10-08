@@ -303,33 +303,6 @@
 
         .chevron-icon.rotate-180 { transform: rotate(180deg); }
 
-        .satellite-label {
-            position: absolute;
-            color: white;
-            background: rgba(10, 10, 10, 0.7);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-            pointer-events: none;
-            transform: translate(-50%, calc(-100% - 20px)); /* Position above the point with a gap */
-            white-space: nowrap;
-            transition: opacity 0.2s ease-in-out;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            display: none; /* Initially hidden */
-            backdrop-filter: blur(5px);
-        }
-        .satellite-label::after { /* The line connector */
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 100%;
-            transform: translateX(-50%);
-            width: 1px;
-            height: 20px; /* Length of the line */
-            background: rgba(255, 255, 255, 0.5);
-        }
-
     </style>
 
 </head>
@@ -339,8 +312,6 @@
     <img id="logo" src="https://davekuva.github.io/kuva-sim/images/logo.png" alt="Logo">
 
     <div id="container"></div>
-    <div id="label-60562" class="satellite-label">HYPERFIELD-1A</div>
-    <div id="label-64552" class="satellite-label">HYPERFIELD-1B</div>
 
     <div id="toggleLeftPanelBtn" class="panel-toggle">Control panel</div>
 
@@ -1739,58 +1710,9 @@
             }
             if (camera.position.length() < EARTH_RADIUS_SCALED * 1.05) camera.position.setLength(EARTH_RADIUS_SCALED * 1.05);
             
-            updateLabels();
             renderer.render(scene, camera);
         }
         function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
-
-        function updateLabels() {
-            // Hide labels if fast-forwarding or if the constellation is larger than the default size.
-            const constellationSize = parseInt(constellationSlider.value, 10);
-            if (isTimeWarping || constellationSize > 2) {
-                document.getElementById('label-60562').style.display = 'none';
-                document.getElementById('label-64552').style.display = 'none';
-                return;
-            }
-
-            const minFadeDist = 12; // Lowered from 15 to bring the fade-out point even closer.
-            const maxFadeDist = 35; // Adjusted to maintain a smooth fade transition.
-            const camDistance = camera.position.length();
-
-            // Calculate opacity based on camera distance
-            let opacity = (camDistance - minFadeDist) / (maxFadeDist - minFadeDist);
-            opacity = Math.max(0, Math.min(1, opacity));
-
-            const idsToLabel = ['60562', '64552'];
-
-            idsToLabel.forEach(id => {
-                const sat = trackedSatellites[id];
-                const labelEl = document.getElementById(`label-${id}`);
-
-                if (sat && sat.isVisible && sat.instances.length > 0 && labelEl) {
-                    const satMesh = sat.instances[0].mesh;
-                    const pos = new THREE.Vector3().setFromMatrixPosition(satMesh.matrixWorld);
-                    
-                    // Project 3D position to 2D screen space
-                    pos.project(camera);
-
-                    // Check if the satellite is in front of the camera and visible
-                    if (pos.z < 1 && opacity > 0) {
-                        const x = (pos.x * .5 + .5) * renderer.domElement.clientWidth;
-                        const y = (pos.y * -.5 + .5) * renderer.domElement.clientHeight;
-
-                        labelEl.style.display = 'block';
-                        labelEl.style.left = `${x}px`;
-                        labelEl.style.top = `${y}px`;
-                        labelEl.style.opacity = opacity;
-                    } else {
-                        labelEl.style.display = 'none';
-                    }
-                } else if (labelEl) {
-                    labelEl.style.display = 'none';
-                }
-            });
-        }
 
         function handleCamera(deltaTime) {
 
@@ -1889,3 +1811,4 @@
 </body>
 
 </html>
+
