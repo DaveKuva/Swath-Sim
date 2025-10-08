@@ -308,7 +308,7 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
-            pointer-events: none;
+            cursor: pointer;
             transform: translate(-50%, calc(-100% - 20px)); /* Position above the point with a gap */
             white-space: nowrap;
             transition: opacity 0.2s ease-in-out;
@@ -727,6 +727,15 @@
             trackEarthBtn.addEventListener('click', () => setCameraMode('earth'));
 
             focusSelect.addEventListener('change', (e) => setFocusedSatellite(e.target.value));
+
+            document.getElementById('label-60562').addEventListener('click', () => {
+                setFocusedSatellite('60562');
+                setCameraMode('satellite');
+            });
+            document.getElementById('label-64552').addEventListener('click', () => {
+                setFocusedSatellite('64552');
+                setCameraMode('satellite');
+            });
 
             demoModeToggle.addEventListener('change', (e) => {
 
@@ -1886,7 +1895,4 @@
 </body>
 
 </html>
-
-
-
 
