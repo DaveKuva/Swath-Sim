@@ -1521,268 +1521,150 @@
             requestAnimationFrame(animate);
             const deltaTime = clock.getDelta();
 
-            
-
             if (isTimeWarping) {
-
                 simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * TIME_WARP_FACTOR * 1000);
-
             } else if (!isDemoMode) {
-
                 simulationTime = new Date(); // In normal mode, always sync to real time
-
             } else {
-
                 // In demo mode, but not time warping, time progresses normally from its set point
-
                 simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * 1000);
-
             }
 
             const now = simulationTime;
 
-            const gmst = satellite.gstime(now);
+            // Calculate GMST for physics and data, which must always align with the satellite's time.
+            const gmstForData = satellite.gstime(now);
 
-            
+            // In demo mode, calculate a separate GMST for the Earth's visual rotation.
+            // This allows us to shift the Earth's view without altering the satellite's physical position.
+            let gmstForVisuals;
+            if (isDemoMode) {
+                // Offset time by +5 hours for the Earth's rotation in demo mode.
+                const earthTime = new Date(now.getTime() + (5 * 60 * 60 * 1000));
+                gmstForVisuals = satellite.gstime(earthTime);
+            } else {
+                gmstForVisuals = gmstForData;
+            }
 
-            if(earth) earth.rotation.y = gmst; 
-
-            if(atmosphere) atmosphere.rotation.y = gmst; 
-
-            if(clouds) clouds.rotation.y = gmst * 0.95;
-
-            if(cityLights) cityLights.rotation.y = gmst;
-
-            
+            if(earth) earth.rotation.y = gmstForVisuals; 
+            if(atmosphere) atmosphere.rotation.y = gmstForVisuals; 
+            if(clouds) clouds.rotation.y = gmstForVisuals * 0.95;
+            if(cityLights) cityLights.rotation.y = gmstForVisuals;
 
             const sunPosition = calculateAccurateSunPosition(now);
-
             directionalLight.position.copy(sunPosition);
-
             if (cityLights) {
-
                  cityLights.material.uniforms.sunDirection.value.copy(sunPosition);
-
             }
-
             
-
             for (const id in trackedSatellites) {
-
                 const sat = trackedSatellites[id];
-
                 sat.orbit.visible = sat.isVisible;
-
                 const orbitalPeriod = (2 * Math.PI) / sat.satrec.no * 60000;
-
                 const timeOffset = orbitalPeriod / sat.instances.length;
-
                 const epochDate = new Date((sat.satrec.jdsatepoch - 2440587.5) * 86400000);
-
                 const timeSinceEpoch = now.getTime() - epochDate.getTime();
-
                 sat.instances.forEach((instance, index) => {
-
                     instance.mesh.visible = sat.isVisible;
-
                     if (!sat.isVisible) {
-
                         instance.swath.visible = false; instance.beam.visible = false; instance.swathPath.forEach(p => p.visible = false);
-
                         return;
-
                     } else {
-
                          instance.swathPath.forEach(p => p.visible = true);
-
                     }
-
                     
-
                     const instanceTime = new Date(epochDate.getTime() + (timeSinceEpoch + (index * timeOffset)) % orbitalPeriod);
-
                     const posVel = satellite.propagate(sat.satrec, instanceTime);
-
                     if (posVel.position && posVel.velocity) {
-
                         const { position: posEci, velocity: velEci } = posVel;
-
                         instance.mesh.position.set(posEci.x * SCALING_FACTOR, posEci.z * SCALING_FACTOR, -posEci.y * SCALING_FACTOR);
-
                         instance.velocity = velEci;
-
                         
-
                         const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-
                         instance.mesh.up.copy(satVelocityVector);
-
                         instance.mesh.lookAt(earth.position);
-
                         if (index === 0) {
-
-                            const posGd = satellite.eciToGeodetic(posEci, gmst);
-
+                            const posGd = satellite.eciToGeodetic(posEci, gmstForData);
                             const altitude = posGd.height;
-
                             const velocity = Math.sqrt(velEci.x**2 + velEci.y**2 + velEci.z**2);
-
                             const altEl = document.getElementById(`alt-${id}`), velEl = document.getElementById(`vel-${id}`);
-
                             if (altEl) altEl.textContent = altitude.toFixed(2);
-
                             if (velEl) velEl.textContent = velocity.toFixed(2);
-
                             if (id === focusedSatelliteId && !focusedSatInfo.classList.contains('hidden')) {
-
                                 const focusedAltEl = document.getElementById('focused-alt'), focusedVelEl = document.getElementById('focused-vel');
-
                                 if(focusedAltEl) focusedAltEl.textContent = altitude.toFixed(2);
-
                                 if(focusedVelEl) focusedVelEl.textContent = velocity.toFixed(2);
-
                             }
-
                         }
-
                         const isHyperfield = sat.tleName.toLowerCase().includes('hyperfield');
-
                         const isDaySide = instance.mesh.position.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
-
                         const swathShouldBeVisible = (enforceDayNightSwath ? isDaySide : true) && isHyperfield && sat.isSwathVisible;
-
                         instance.swath.visible = swathShouldBeVisible;
-
                         instance.beam.visible = swathShouldBeVisible && showBeams;
-
                         
-
                         if (swathShouldBeVisible) {
-
                             const surfacePosition = instance.mesh.position.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
-
                             instance.swath.position.copy(surfacePosition);
-
                             const satVelVec = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-
                             instance.swath.up.copy(satVelVec);
-
                             instance.swath.lookAt(earth.position);
-
                             instance.beam.position.copy(surfacePosition);
-
                             instance.beam.up.copy(satVelVec);
-
                             instance.beam.lookAt(instance.mesh.position);
-
                             instance.beam.scale.z = surfacePosition.distanceTo(instance.mesh.position);
-
                             if (sat.isSwathRecording) {
-
                                 const createAndPlaceSnapshot = (position3D) => {
-
                                     const isSnapshotDaySide = position3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
-
                                     if (!enforceDayNightSwath || isSnapshotDaySide) {
-
                                         const snapshot = createSwath();
-
                                         snapshot.visible = true;
-
                                         snapshot.position.copy(position3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005));
-
                                         const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-
                                         snapshot.up.copy(satVelocityVector);
-
                                         snapshot.lookAt(earth.position);
-
                                         snapshot.material.color.setHex((instance.swathPath.length % 2 === 0) ? 0xffff00 : 0xffa500);
-
                                         earth.worldToLocal(snapshot.position);
-
                                         snapshot.quaternion.premultiply(earth.quaternion.clone().invert());
-
                                         earth.add(snapshot);
-
                                         instance.swathPath.push(snapshot);
-
                                     }
-
                                 };
-
                                 
-
                                 if (instance.needsSnapshotReset) {
-
                                     createAndPlaceSnapshot(instance.mesh.position);
-
                                     instance.lastSnapshotPosition.copy(instance.mesh.position);
-
                                     instance.needsSnapshotReset = false;
-
                                 }
-
                                 const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
-
                                 while (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
-
                                     const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
-
                                     const nextSnapshotPosition = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
-
                                     createAndPlaceSnapshot(nextSnapshotPosition);
-
                                     instance.lastSnapshotPosition.copy(nextSnapshotPosition);
-
                                 }
-
                             }
-
                         }
-
                     }
-
                 });
-
             }
-
             handleCamera(deltaTime);
-
             controls.update();
-
             // Smoothly fade out atmosphere when camera is close to prevent visual artifacts
-
             if (atmosphere && atmosphere.material.uniforms.uOpacity) {
-
                 const startFadeDistance = EARTH_RADIUS_SCALED * 2.5;
-
                 const endFadeDistance = EARTH_RADIUS_SCALED * 1.1;
-
                 const camDistance = camera.position.length();
-
                 const smoothstep = (min, max, value) => {
-
                     const x = Math.max(0, Math.min(1, (value - min) / (max - min)));
-
                     return x * x * (3 - 2 * x);
-
                 };
-
                 const opacity = smoothstep(endFadeDistance, startFadeDistance, camDistance);
-
                 atmosphere.material.uniforms.uOpacity.value = opacity;
-
             }
-
             if (camera.position.length() < EARTH_RADIUS_SCALED * 1.05) camera.position.setLength(EARTH_RADIUS_SCALED * 1.05);
-
             
-
             renderer.render(scene, camera);
-
         }
-
         function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
 
         function handleCamera(deltaTime) {
@@ -1882,5 +1764,4 @@
 </body>
 
 </html>
-
 
