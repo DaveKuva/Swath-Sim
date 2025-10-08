@@ -21,17 +21,11 @@
     <meta charset="UTF-8">
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
     <title>Kuva Space</title>
-
     <!-- Web App Manifest & PWA Tags for Borderless Experience -->
-
-    <link rel="manifest" href='data:application/manifest+json;base64,ewogICJuYW1lIjogIkt1dmEgU3BhY2UiLAogICJzaG9ydF9uYW1lIjogIkt1dmEgU3BhY2UiLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiIzAwMDAwMCIsCiAgInRoZW1lX2NvbG9yIjogIiMwMDAwMDAiLCJkZXNjcmlwdGlvbiI6IkFuIGludGVyYWN0aXZlIDNEIHNhdGVsbGl0ZSB0cmFja2VyIGZyb20gS3V2YSBTcGFjZS4iLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9kYXZla3V2YS5naXRodWIuaW8vU3dhdGgtU2ltL2ltYWdlcy9sb2dvLnBuZyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55IG1hc2thYmxlIn0seyJzcmMiOiJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9Td2F0aC1TaW0vaW1hZ2VzL2xvZ28ucG5nIiwic2l6ZXMiOiI1MTJ4NTEyIiwidHlwZSI6ImltYWdlL3BuZyIsInB1cnBvc2UiOiJhbnkgbWFza2FibGUifV19'>
-
+    <link rel="manifest" href='data:application/manifest+json;base64,ewogICAgIm5hbWUiOiAiS3V2YSBTcGFjZSIsCiAgICAic2hvcnRfbmFtZSI6ICJLdXZhIFNwYWNlIiwKICAgICJzdGFydF91cmwiOiAiLiIsCiAgICAic2NvcGUiOiAiLyIsCiAgICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAgICJkaXNwbGF5X292ZXJyaWRlIjogWwogICAgICAgICJzdGFuZGFsb25lIiwKICAgICAgICAibWluaW1hbC11aSIKICAgIF0sCiAgICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMDAwMDAwIiwKICAgICJ0aGVtZV9jb2xvciI6ICIjMDAwMDAwIiwKICAgICJkZXNjcmlwdGlvbiI6ICJBbiBpbnRlcmFjdGl2ZSAzRCBzdGVsbGl0ZSB0cmFja2VyIGZyb20gS3V2YSBTcGFjZS4iLAogICAgImljb25zIjogWwogICAgICAgIHsKICAgICAgICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9rdXZhLXNpbS9pbWFnZXMvbG9nby5wbmciLAogICAgICAgICAgICAic2l6ZXMiOiAiMTkyeDE5MiIsCiAgICAgICAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICAgInNyYyI6ICJodHRwczovL2RhdmVrdXZhLmdpdGh1Yi5pby9rdXZhLXNpbS9pbWFnZXMvbG9nby5wbmciLAogICAgICAgICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICAgICAgICJwdXJwb3NlIjogImFueSBtYXNrYWJsZSIKICAgICAgICB9CiAgICBdCn0='>
     <meta name="apple-mobile-web-app-capable" content="yes">
-
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
     <meta name="apple-mobile-web-app-title" content="Kuva Space">
 
     <link rel="apple-touch-icon" href="https://davekuva.github.io/kuva-sim/images/logo.png">
@@ -357,13 +351,21 @@
             </div>
 
             <div id="constellationControl" class="space-y-3 mt-4 pt-4 border-t border-gray-700">
+
                 <label for="constellationSlider" class="font-bold text-sm">Hyperfield constellation size: <span id="constellationCount">2</span></label>
+
                 <input type="range" id="constellationSlider" min="2" max="100" value="2" class="w-full">
+
                 <button id="trackEarthBtn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full border border-gray-600">Global view</button>
-            </div>
-            <div id="focusControl" class="hidden mt-4 pt-4 border-t border-gray-700">
-                 <label for="focusSelect" class="font-bold text-sm">Focus target</label>
-                 <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"></select>
+
+                 <div id="focusControl" class="hidden">
+
+                     <label for="focusSelect" class="font-bold text-sm">Focus target</label>
+
+                     <select id="focusSelect" class="custom-select w-full bg-gray-700 text-white rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 mt-1"></select>
+
+                </div>
+
             </div>
 
             
@@ -575,6 +577,7 @@
         const satelliteListChevron = document.getElementById('satelliteListChevron');
 
         const demoModeToggle = document.getElementById('demoModeToggle');
+        const constellationControl = document.getElementById('constellationControl');
 
         
 
@@ -851,19 +854,12 @@
             });
 
             satellitePanel.addEventListener('click', (e) => {
-
                 const satItem = e.target.closest('.sat-item-clickable');
-
                 if (satItem && satItem.dataset.id) {
-
                     const satId = satItem.dataset.id;
-
-                    setCameraMode('satellite');
-
-                    setFocusedSatellite(satId);
-
+                    setFocusedSatellite(satId); // Set the active satellite first
+                    setCameraMode('satellite'); // Then update the UI based on that satellite
                 }
-
             });
 
             satellitePanel.addEventListener('change', (e) => {
@@ -1445,19 +1441,37 @@
         
 
         function setCameraMode(mode) {
+
             cameraMode = mode;
+
             if (mode === 'earth') {
+
                 trackEarthBtn.classList.replace('bg-gray-800', 'bg-gray-600');
+
                 focusControl.classList.add('hidden');
+
                 constellationControl.classList.remove('hidden');
+
                 if(focusedSatelliteId) setFocusedSatellite("");
-            } else { // satellite mode
+
+            } else {
+
                  trackEarthBtn.classList.replace('bg-gray-600', 'bg-gray-800');
+
                  focusControl.classList.remove('hidden');
-                 constellationControl.classList.remove('hidden'); // Always show constellation controls
+
+                 const sat = trackedSatellites[focusedSatelliteId];
+
+                 const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
+
+                 constellationControl.classList.toggle('hidden', !isHyperfield);
+
                  controls.minDistance = 0.1;
+
             }
+
             updateFocusedSatInfoUI();
+
         }
 
         
@@ -1738,4 +1752,5 @@
 </body>
 
 </html>
+
 
