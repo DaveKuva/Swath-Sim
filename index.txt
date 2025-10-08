@@ -631,25 +631,20 @@
         let enforceDayNightSwath = true;
 
         let showBeams = true;
-
         const EARTH_RADIUS_KM = 6371;
-
         const SCALING_FACTOR = 1 / 1000;
-
         const EARTH_RADIUS_SCALED = EARTH_RADIUS_KM * SCALING_FACTOR;
-
         const TIME_WARP_FACTOR = 60; // 1 second in real-time = 1 minute in simulation
-
         const SAT_COLORS = [0xff6347, 0x9370db, 0x4682b4, 0x32cd32, 0xffd700, 0x00fa9a, 0xff4500, 0x1e90ff];
-
         const SWATH_SNAPSHOT_DISTANCE_KM = 45; 
-
+        const MAX_SWATH_SNAPSHOTS = 20000; // Maximum number of path segments per satellite instance
+        
+        // A reusable dummy object for efficient matrix calculations to avoid creating new objects in the render loop.
+        const dummyMatrixObject = new THREE.Object3D();
         
 
         const DEFAULT_TLES = {
-
             '60562': ['HYPERFIELD-1A', '1 60562U 24149CY  25280.68391397  .00009245  00000+0  35371-3 0  9993', '2 60562  97.4052 357.5179 0007005 119.8281 240.3655 15.26773275 63455'],
-
             '64552': ['HYPERFIELD-1B', '1 64552U 25135AA  25280.95826816  .00007948  00000+0  38032-3 0  9996', '2 64552  97.4498  33.8537 0002276  97.1876 262.9617 15.19235477 16542']
 
         };
@@ -1204,69 +1199,64 @@
              beamGeo.rotateY(Math.PI / 4); beamGeo.rotateX(Math.PI / 2); beamGeo.translate(0, 0, 0.5); 
 
              const beamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, depthTest: false });
-
              const beam = new THREE.Mesh(beamGeo, beamMat);
-
              scene.add(beam);
-
              
+             // --- Performance Optimization: Use InstancedMesh for swath paths ---
+             const swathPathGeo = new THREE.PlaneGeometry(swathSize, swathSize);
+             const yellowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
+             const orangeMat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
 
-             return { mesh: satMesh, swath, beam, swathPath: [], lastSnapshotPosition: new THREE.Vector3(), needsSnapshotReset: true, velocity: { x: 0, y: 0, z: 0 } };
+             const instancedSwathYellow = new THREE.InstancedMesh(swathPathGeo, yellowMat, MAX_SWATH_SNAPSHOTS);
+             const instancedSwathOrange = new THREE.InstancedMesh(swathPathGeo, orangeMat, MAX_SWATH_SNAPSHOTS);
 
+             instancedSwathYellow.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+             instancedSwathOrange.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+             
+             instancedSwathYellow.renderOrder = 0; // Render paths before live elements
+             instancedSwathOrange.renderOrder = 0;
+
+             earth.add(instancedSwathYellow, instancedSwathOrange);
+
+             return { mesh: satMesh, swath, beam, lastSnapshotPosition: new THREE.Vector3(), needsSnapshotReset: true, velocity: { x: 0, y: 0, z: 0 }, instancedSwathYellow, instancedSwathOrange, swathCount: 0 };
         }
 
         function updateConstellation(size) {
-
             ['60562', '64552'].forEach(id => {
-
                 if (trackedSatellites[id]) {
-
                     for(let i = 1; i < trackedSatellites[id].instances.length; i++) {
-
                         const instance = trackedSatellites[id].instances[i];
-
                         scene.remove(instance.mesh); scene.remove(instance.swath); scene.remove(instance.beam);
-
-                        instance.swathPath.forEach(p => earth.remove(p));
-
+                        // Clean up instanced meshes
+                        earth.remove(instance.instancedSwathYellow);
+                        earth.remove(instance.instancedSwathOrange);
+                        instance.instancedSwathYellow.dispose();
+                        instance.instancedSwathOrange.dispose();
                     }
-
                     trackedSatellites[id].instances.splice(1);
-
                 }
-
             });
-
             
-
             const countA = Math.ceil(size / 2), countB = Math.floor(size / 2);
-
             for(let i = 1; i < countA; i++) if (trackedSatellites['60562']) trackedSatellites['60562'].instances.push(createSatelliteInstance());
-
             for(let i = 1; i < countB; i++) if (trackedSatellites['64552']) trackedSatellites['64552'].instances.push(createSatelliteInstance());
-
         }
-
         
 
         function clearSwathPath(noradId) {
-
             const sat = trackedSatellites[noradId];
-
             if (sat) sat.instances.forEach(inst => {
-
-                inst.swathPath.forEach(swath => earth.remove(swath));
-
-                inst.swathPath = [];
-
+                // Reset the count of visible instances for both instanced meshes.
+                inst.instancedSwathYellow.count = 0;
+                inst.instancedSwathYellow.instanceMatrix.needsUpdate = true;
+                inst.instancedSwathOrange.count = 0;
+                inst.instancedSwathOrange.instanceMatrix.needsUpdate = true;
+                inst.swathCount = 0; // Reset the total snapshot counter.
                 inst.needsSnapshotReset = true;
-
             });
-
         }
 
         function createOrbit(satrec) {
-
             const points = [];
 
             const orbitalPeriod = (2 * Math.PI) / satrec.no;
@@ -1555,11 +1545,13 @@
                 const timeSinceEpoch = now.getTime() - epochDate.getTime();
                 sat.instances.forEach((instance, index) => {
                     instance.mesh.visible = sat.isVisible;
+                    // Also toggle visibility of the entire recorded path.
+                    instance.instancedSwathYellow.visible = sat.isVisible;
+                    instance.instancedSwathOrange.visible = sat.isVisible;
+
                     if (!sat.isVisible) {
-                        instance.swath.visible = false; instance.beam.visible = false; instance.swathPath.forEach(p => p.visible = false);
+                        instance.swath.visible = false; instance.beam.visible = false;
                         return;
-                    } else {
-                         instance.swathPath.forEach(p => p.visible = true);
                     }
                     
                     const instanceTime = new Date(epochDate.getTime() + (timeSinceEpoch + (index * timeOffset)) % orbitalPeriod);
@@ -1601,34 +1593,52 @@
                             instance.beam.up.copy(satVelVec);
                             instance.beam.lookAt(instance.mesh.position);
                             instance.beam.scale.z = surfacePosition.distanceTo(instance.mesh.position);
+                            
+                            // --- OPTIMIZED SWATH RECORDING ---
                             if (sat.isSwathRecording) {
-                                const createAndPlaceSnapshot = (position3D) => {
+                                // This helper function calculates the matrix for a new swath segment 
+                                // and adds it to the appropriate InstancedMesh, which is highly performant.
+                                const addSnapshot = (inst, position3D) => {
+                                    if (inst.swathCount >= MAX_SWATH_SNAPSHOTS) return; // Stop if we reach the max pre-allocated count
+
                                     const isSnapshotDaySide = position3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
                                     if (!enforceDayNightSwath || isSnapshotDaySide) {
-                                        const snapshot = createSwath();
-                                        snapshot.visible = true;
-                                        snapshot.position.copy(position3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005));
-                                        const satVelocityVector = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-                                        snapshot.up.copy(satVelocityVector);
-                                        snapshot.lookAt(earth.position);
-                                        snapshot.material.color.setHex((instance.swathPath.length % 2 === 0) ? 0xffff00 : 0xffa500);
-                                        earth.worldToLocal(snapshot.position);
-                                        snapshot.quaternion.premultiply(earth.quaternion.clone().invert());
-                                        earth.add(snapshot);
-                                        instance.swathPath.push(snapshot);
+                                        // Use the reusable dummy object to calculate the matrix
+                                        dummyMatrixObject.position.copy(position3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005));
+                                        const satVelocityVector = new THREE.Vector3(inst.velocity.x, inst.velocity.z, -inst.velocity.y).normalize();
+                                        dummyMatrixObject.up.copy(satVelocityVector);
+                                        dummyMatrixObject.lookAt(earth.position);
+                                        
+                                        // Transform the matrix to be relative to the Earth's rotation
+                                        earth.worldToLocal(dummyMatrixObject.position);
+                                        dummyMatrixObject.quaternion.premultiply(earth.quaternion.clone().invert());
+                                        dummyMatrixObject.updateMatrix();
+
+                                        // Alternate between yellow and orange meshes
+                                        const isYellow = inst.swathCount % 2 === 0;
+                                        const mesh = isYellow ? inst.instancedSwathYellow : inst.instancedSwathOrange;
+                                        const index = Math.floor(inst.swathCount / 2);
+
+                                        mesh.setMatrixAt(index, dummyMatrixObject.matrix);
+                                        mesh.count = index + 1;
+                                        mesh.instanceMatrix.needsUpdate = true;
+                                        
+                                        inst.swathCount++;
                                     }
                                 };
                                 
                                 if (instance.needsSnapshotReset) {
-                                    createAndPlaceSnapshot(instance.mesh.position);
+                                    addSnapshot(instance, instance.mesh.position);
                                     instance.lastSnapshotPosition.copy(instance.mesh.position);
                                     instance.needsSnapshotReset = false;
                                 }
+
                                 const snapshotDistance = SWATH_SNAPSHOT_DISTANCE_KM * SCALING_FACTOR;
+                                // This loop efficiently fills in the path during time-warp without creating new objects
                                 while (instance.mesh.position.distanceTo(instance.lastSnapshotPosition) > snapshotDistance) {
                                     const direction = instance.mesh.position.clone().sub(instance.lastSnapshotPosition).normalize();
                                     const nextSnapshotPosition = instance.lastSnapshotPosition.clone().add(direction.multiplyScalar(snapshotDistance));
-                                    createAndPlaceSnapshot(nextSnapshotPosition);
+                                    addSnapshot(instance, nextSnapshotPosition);
                                     instance.lastSnapshotPosition.copy(nextSnapshotPosition);
                                 }
                             }
@@ -1753,6 +1763,7 @@
 </body>
 
 </html>
+
 
 
 
