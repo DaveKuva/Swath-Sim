@@ -1811,7 +1811,4 @@
 </body>
 
 </html>
-"
-Can we get TLE data for all of these please and add them to the list of satellites.
-https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle
 
