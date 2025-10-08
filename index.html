@@ -317,8 +317,6 @@
         let simulationTime;
         let isTimeWarping = false;
         let isDemoMode = false;
-        let demoTimeOffset = 0;
-        const TIME_WARP_FACTOR = 60;
         
         let cameraTransitionState = 'idle';
         let cameraTransitionProgress = 0;
@@ -334,11 +332,13 @@
         const EARTH_RADIUS_KM = 6371;
         const SCALING_FACTOR = 1 / 1000;
         const EARTH_RADIUS_SCALED = EARTH_RADIUS_KM * SCALING_FACTOR;
+        const TIME_WARP_FACTOR = 60; // 1 second in real-time = 1 minute in simulation
         const SAT_COLORS = [0xff6347, 0x9370db, 0x4682b4, 0x32cd32, 0xffd700, 0x00fa9a, 0xff4500, 0x1e90ff];
         const SWATH_SNAPSHOT_DISTANCE_KM = 45; 
+        
         const DEFAULT_TLES = {
-            '60562': ['Hyperfield-1A', '1 60562U 24149CY  25273.14645047  .00015321  00000+0  58728-3 0  9993', '2 60562  97.4049 350.0439 0006684 141.6331 218.5385 15.26583021 62307'],
-            '64552': ['Hyperfield-1B', '1 64552U 25135AA  25273.18590572  .00010550  00000+0  50593-3 0  9999', '2 64552  97.4478  26.1903 0002229 109.4879 250.6596 15.19077417 15367']
+            '60562': ['HYPERFIELD-1A', '1 60562U 24149CY  25280.68391397  .00009245  00000+0  35371-3 0  9993', '2 60562  97.4052 357.5179 0007005 119.8281 240.3655 15.26773275 63455'],
+            '64552': ['HYPERFIELD-1B', '1 64552U 25135AA  25280.95826816  .00007948  00000+0  38032-3 0  9996', '2 64552  97.4498  33.8537 0002276  97.1876 262.9617 15.19235477 16542']
         };
 
         function init() {
@@ -373,15 +373,12 @@
             demoModeToggle.addEventListener('change', (e) => {
                 isDemoMode = e.target.checked;
                 if (isDemoMode) {
-                    const demoSatId = '60562'; // Use Hyperfield-1A for the demo
+                    const demoSatId = '64552'; // Use Hyperfield-1B for positioning
                     if (trackedSatellites[demoSatId]) {
-                        const nextPass = findNextSunlitPass(trackedSatellites[demoSatId].satrec);
-                        const demoStartTime = new Date(nextPass.getTime() + 10 * 60 * 1000); // 10 min offset
-                        const now = new Date();
-                        demoTimeOffset = demoStartTime.getTime() - now.getTime();
+                         simulationTime = findNextFinlandPass(trackedSatellites[demoSatId].satrec);
                     }
                 } else {
-                    demoTimeOffset = 0;
+                    simulationTime = new Date();
                     // When turning off demo mode, also turn off swath recording for all satellites.
                     for (const id in trackedSatellites) {
                         const sat = trackedSatellites[id];
@@ -423,6 +420,9 @@
             
             timeWarpToggle.addEventListener('change', (e) => {
                 isTimeWarping = e.target.checked;
+                if (!isTimeWarping && !isDemoMode) { // Only reset time if not in demo mode
+                    simulationTime = new Date();
+                }
                 if (!isTimeWarping) {
                     // When time warp is turned off, also turn off swath recording for all satellites.
                     for (const id in trackedSatellites) {
@@ -500,7 +500,7 @@
             Object.keys(DEFAULT_TLES).forEach(id => addSatellite(id, DEFAULT_TLES[id]));
             focusedSatelliteId = null;
             updateSatelliteListUI();
-            await updateAllTLEs();
+            // await updateAllTLEs(); // Disabled automatic TLE fetch on load to prevent rate-limiting.
             setInterval(updateAllTLEs, 3600 * 1000 * 6); // Fetch every 6 hours
         }
 
@@ -834,57 +834,66 @@
             transitionStartTarget.copy(controls.target);
         }
 
-        function findNextSunlitPass(satrec) {
+        function findNextFinlandPass(satrec) {
             const startTime = new Date();
-            // Check every 30 seconds for the next ~100 minutes (a full orbit)
-            for (let i = 0; i < 200; i++) {
+            const orbitalPeriod = (2 * Math.PI / satrec.no) * 60 * 1000; 
+
+            // Search over the next 3 orbits to be sure we find a good pass
+            for (let i = 0; i < (orbitalPeriod / (30 * 1000)) * 3; i++) {
                 const checkTime = new Date(startTime.getTime() + i * 30 * 1000);
-                const sunPos = calculateAccurateSunPosition(checkTime);
+                
+                const gmst = satellite.gstime(checkTime);
                 const posVel = satellite.propagate(satrec, checkTime);
-                if (posVel.position) {
-                    const satPos = new THREE.Vector3(posVel.position.x, posVel.position.z, -posVel.position.y).normalize();
-                    const sunDir = sunPos.clone().normalize();
-                    const dotProduct = satPos.dot(sunDir);
-                    // A dot product > 0 means the satellite is on the sunlit side
-                    if (dotProduct > 0.1) {
-                        return checkTime;
+                
+                if (posVel.position && posVel.velocity) {
+                    const posGd = satellite.eciToGeodetic(posVel.position, gmst);
+                    const lat = satellite.degreesLat(posGd.latitude);
+                    const lon = satellite.degreesLong(posGd.longitude);
+                    
+                    // Check for NORTHBOUND pass (velocity.z > 0 in ECI frame for polar orbits)
+                    if (posVel.velocity.z > 0) {
+                        // Check if it's over the target area (Scandinavia/Finland)
+                        if (lat > 60 && lat < 75 && lon > 15 && lon < 35) {
+                            const sunPos = calculateAccurateSunPosition(checkTime);
+                            const satVec = new THREE.Vector3(posVel.position.x, posVel.position.z, -posVel.position.y);
+                            const dotSun = satVec.clone().normalize().dot(sunPos.clone().normalize());
+
+                            if (dotSun > 0.1) { // Check if it's sunlit
+                                console.log("Found northbound sunlit pass over Finland at:", checkTime);
+                                return new Date(checkTime.getTime() + 10 * 60 * 1000); // ADD 10 MINUTES
+                            }
+                        }
                     }
                 }
             }
-            return startTime; // Fallback
+            // Fallback if no specific pass is found within the search window
+            console.warn("Could not find a suitable northbound demo pass, falling back to a simple offset.");
+            return new Date(startTime.getTime() + 10 * 60 * 1000); 
         }
+
 
         function animate() {
             requestAnimationFrame(animate);
             const deltaTime = clock.getDelta();
             
-            let satTime;
-            const realNow = new Date();
-
-            if (isDemoMode) {
-                satTime = new Date(realNow.getTime() + demoTimeOffset);
-                if(isTimeWarping) {
-                    demoTimeOffset += deltaTime * TIME_WARP_FACTOR * 1000;
-                    satTime = new Date(realNow.getTime() + demoTimeOffset);
-                }
+            if (isTimeWarping) {
+                simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * TIME_WARP_FACTOR * 1000);
+            } else if (!isDemoMode) {
+                simulationTime = new Date(); // In normal mode, always sync to real time
             } else {
-                 if (isTimeWarping) {
-                    simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * TIME_WARP_FACTOR * 1000);
-                    satTime = simulationTime;
-                } else {
-                    simulationTime = new Date();
-                    satTime = simulationTime;
-                }
+                // In demo mode, but not time warping, time progresses normally from its set point
+                simulationTime.setMilliseconds(simulationTime.getMilliseconds() + deltaTime * 1000);
             }
 
-            const gmst = satellite.gstime(realNow);
+            const now = simulationTime;
+            const gmst = satellite.gstime(now);
             
             if(earth) earth.rotation.y = gmst; 
             if(atmosphere) atmosphere.rotation.y = gmst; 
             if(clouds) clouds.rotation.y = gmst * 0.95;
             if(cityLights) cityLights.rotation.y = gmst;
             
-            const sunPosition = calculateAccurateSunPosition(satTime);
+            const sunPosition = calculateAccurateSunPosition(now);
             directionalLight.position.copy(sunPosition);
             if (cityLights) {
                  cityLights.material.uniforms.sunDirection.value.copy(sunPosition);
@@ -896,7 +905,7 @@
                 const orbitalPeriod = (2 * Math.PI) / sat.satrec.no * 60000;
                 const timeOffset = orbitalPeriod / sat.instances.length;
                 const epochDate = new Date((sat.satrec.jdsatepoch - 2440587.5) * 86400000);
-                const timeSinceEpoch = satTime.getTime() - epochDate.getTime();
+                const timeSinceEpoch = now.getTime() - epochDate.getTime();
 
                 sat.instances.forEach((instance, index) => {
                     instance.mesh.visible = sat.isVisible;
