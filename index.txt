@@ -1487,143 +1487,38 @@
         }
 
         
-
         function setFocusedSatellite(noradId) {
-
             if (!noradId) {
-
-                if (focusedSatelliteId) { 
-
+                if (focusedSatelliteId) { // If we were focused on something
                     cameraTransitionState = 'toEarth';
-
                     cameraTransitionProgress = 0;
-
                     transitionStartPosition.copy(camera.position);
-
                     transitionStartTarget.copy(controls.target);
-
+                    transitionEndPosition.set(0, 15, 30); // Sensible default Earth view
                     transitionEndTarget.set(0, 0, 0);
-
-                    transitionEndPosition.set(0, 15, 30);
-
                 }
-
-                
-
                 focusedSatelliteId = null;
-
-                const sat = trackedSatellites[focusedSatelliteId];
-
-                const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
-
-                if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
-
-                if (focusSelect.value != "") focusSelect.value = "";
-
-                updateFocusedSatInfoUI();
-
-                return;
-
+                if (focusSelect) focusSelect.value = "";
+            } else {
+                focusedSatelliteId = noradId;
+                if (focusSelect) focusSelect.value = noradId;
+                cameraTransitionState = 'toSat';
+                cameraTransitionProgress = 0;
+                transitionStartPosition.copy(camera.position);
+                transitionStartTarget.copy(controls.target);
+                // The end position and target will be calculated in the handleCamera function
             }
-
-            if (noradId === focusedSatelliteId && cameraTransitionState === 'idle') return;
-
-            focusedSatelliteId = noradId;
-
-            const sat = trackedSatellites[focusedSatelliteId];
-
-            const isHyperfield = sat && sat.tleName.toLowerCase().includes('hyperfield');
-
-            if (cameraMode === 'satellite') constellationControl.classList.toggle('hidden', !isHyperfield);
-
-            if (focusSelect.value != (noradId || "")) focusSelect.value = noradId || "";
-
             updateFocusedSatInfoUI();
-
-            
-
-            cameraTransitionState = 'toSat';
-
-            cameraTransitionProgress = 0;
-
-            transitionStartPosition.copy(camera.position);
-
-            transitionStartTarget.copy(controls.target);
-
         }
-
         function findNextFinlandPass(satrec) {
-
-            const startTime = new Date();
-
-            const orbitalPeriod = (2 * Math.PI / satrec.no) * 60 * 1000; 
-
-            // Search over the next 3 orbits to be sure we find a good pass
-
-            for (let i = 0; i < (orbitalPeriod / (30 * 1000)) * 3; i++) {
-
-                const checkTime = new Date(startTime.getTime() + i * 30 * 1000);
-
-                
-
-                const gmst = satellite.gstime(checkTime);
-
-                const posVel = satellite.propagate(satrec, checkTime);
-
-                
-
-                if (posVel.position && posVel.velocity) {
-
-                    const posGd = satellite.eciToGeodetic(posVel.position, gmst);
-
-                    const lat = satellite.degreesLat(posGd.latitude);
-
-                    const lon = satellite.degreesLong(posGd.longitude);
-
-                    
-
-                    // Check for NORTHBOUND pass (velocity.z > 0 in ECI frame for polar orbits)
-
-                    if (posVel.velocity.z > 0) {
-
-                        // Check if it's over the target area (Scandinavia/Finland)
-
-                        if (lat > 60 && lat < 75 && lon > 15 && lon < 35) {
-
-                            const sunPos = calculateAccurateSunPosition(checkTime);
-
-                            const satVec = new THREE.Vector3(posVel.position.x, posVel.position.z, -posVel.position.y);
-
-                            const dotSun = satVec.clone().normalize().dot(sunPos.clone().normalize());
-
-                            if (dotSun > 0.1) { // Check if it's sunlit
-
-                                console.log("Found northbound sunlit pass over Finland at:", checkTime);
-
-                                return new Date(checkTime.getTime() + 55 * 60 * 1000); // ADD 55 MINUTES
-
-                            }
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-            // Fallback if no specific pass is found within the search window
-
-            console.warn("Could not find a suitable northbound demo pass, falling back to a simple offset.");
-
-            return new Date(startTime.getTime() + 55 * 60 * 1000); 
-
+            // This function now sets a specific, fixed date and time for the demo
+            // to ensure the satellites are in the "perfect spot" as requested by the user.
+            // Time is based on the provided context: Wed, Oct 8, 2025 10:26 AM EEST (UTC+3)
+            console.log("Setting simulation to a fixed demo time based on user-identified 'perfect spot'.");
+            return new Date('2025-10-08T07:26:00.000Z');
         }
-
         function animate() {
-
             requestAnimationFrame(animate);
-
             const deltaTime = clock.getDelta();
 
             
@@ -1987,4 +1882,5 @@
 </body>
 
 </html>
+
 
