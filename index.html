@@ -9,11 +9,8 @@
     <!-- Application Structure Plan: The application's core is a real-time 3D visualization, which is the most effective way to represent spatial satellite data. The original structure of a main canvas and slide-out control panels is retained for its proven usability. To meet the goal of making data more consumable, I've introduced a third, dedicated 'Analysis' panel. This creates a task-oriented user flow: 1) Observe satellites in the 3D environment. 2) Select a satellite to see its live data. 3) Open the Analysis panel to explore a chart of its altitude over a full orbit. This layered approach allows users to move from general observation to specific, quantitative analysis, translating raw orbital mechanics into an easily digestible chart and fulfilling the core objective of synthesizing complex information. -->
 
     <!-- Visualization & Content Choices: 
-
         - Report Info: Real-time satellite position, velocity, orbit path. Goal: Explore spatial relationships. Viz/Presentation: 3D interactive scene. Interaction: Camera pan/zoom/rotate, focus tracking. Justification: Provides intuitive, contextual understanding of satellite orbits in relation to Earth, which is impossible in 2D. Library/Method: Three.js.
-
         - Report Info: Satellite altitude variation over time. Goal: Analyze change and patterns. Viz/Presentation: 2D Line Chart. Interaction: View chart for any selected satellite. Justification: Converts complex orbital propagation data into a clear, quantitative visual, revealing key characteristics like apogee and perigee at a glance. This makes the data easily consumable as requested. Library/Method: Chart.js/Canvas.
-
         - Report Info: Application controls (camera, focus, visualization toggles). Goal: User configuration. Viz/Presentation: Interactive UI panels with buttons, sliders, toggles. Interaction: Click/drag controls to modify the 3D scene in real-time. Justification: Groups all user inputs logically, keeping the main visualization uncluttered. Library/Method: HTML/CSS/JS. -->
 
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
@@ -418,8 +415,8 @@
 
                         <div class="flex items-center justify-between pt-3"><label for="dayNightSwathToggle" class="font-bold text-sm text-gray-300">Day/night swath only</label><label class="toggle-switch"><input type="checkbox" id="dayNightSwathToggle" checked><span class="slider"></span></label></div>
 
-                        <div class="flex items-center justify-between pt-3"><label for="beamsToggle" class="font-bold text-sm text-gray-300">Show satellite beams</label><label class="toggle-switch"><input type="checkbox" id="beamsToggle" checked><span class="slider"></span></label></div>
-
+                        <div class="flex items-center justify-between pt-3"><label for="satNamesToggle" class="font-bold text-sm text-gray-300">Show satellite names</label><label class="toggle-switch"><input type="checkbox" id="satNamesToggle" checked><span class="slider"></span></label></div>
+                        
                         <div class="flex items-center justify-between pt-3"><label for="demoModeToggle" class="font-bold text-sm text-gray-300">Demo Sunlit Pass</label><label class="toggle-switch"><input type="checkbox" id="demoModeToggle"><span class="slider"></span></label></div>
 
                     </div>
@@ -592,7 +589,7 @@
 
         const dayNightSwathToggle = document.getElementById('dayNightSwathToggle');
 
-        const beamsToggle = document.getElementById('beamsToggle');
+        const satNamesToggle = document.getElementById('satNamesToggle');
 
         const toggleAdvancedVisualsBtn = document.getElementById('toggleAdvancedVisualsBtn');
 
@@ -659,7 +656,7 @@
 
         let enforceDayNightSwath = true;
 
-        let showBeams = true;
+        let showSatNames = true;
         const EARTH_RADIUS_KM = 6371;
         const SCALING_FACTOR = 1 / 1000;
         const EARTH_RADIUS_SCALED = EARTH_RADIUS_KM * SCALING_FACTOR;
@@ -855,7 +852,7 @@
 
             dayNightSwathToggle.addEventListener('change', (e) => { enforceDayNightSwath = e.target.checked; });
 
-            beamsToggle.addEventListener('change', (e) => { showBeams = e.target.checked; });
+            satNamesToggle.addEventListener('change', (e) => { showSatNames = e.target.checked; });
 
             toggleAdvancedVisualsBtn.addEventListener('click', () => {
 
@@ -1633,7 +1630,7 @@
                              const liveSwathShouldBeVisible = sat.isSwathVisible && (!enforceDayNightSwath || isDaySide);
                              
                              instance.swath.visible = liveSwathShouldBeVisible;
-                             instance.beam.visible = liveSwathShouldBeVisible && showBeams;
+                             instance.beam.visible = liveSwathShouldBeVisible;
                              
                              if (liveSwathShouldBeVisible) {
                                 const surfacePosition = instance.mesh.position.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
@@ -1690,7 +1687,7 @@
                                         // from the total swath count. This prevents reusing old matrix slots.
                                         const index = mesh.count;
 
-                                        // Ensure we don't write past the pre-allocated buffer for this mesh.
+                                        // Ensure we't write past the pre-allocated buffer for this mesh.
                                         if (index >= MAX_SWATH_SNAPSHOTS) return;
 
                                         mesh.setMatrixAt(index, dummyMatrixObject.matrix);
@@ -1745,16 +1742,16 @@
         function easeInOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
 
         function updateLabels() {
-            // Hide labels if fast-forwarding or if the constellation is larger than the default size.
+            // Hide labels if the toggle is off, if fast-forwarding, or if the constellation is larger than the default size.
             const constellationSize = parseInt(constellationSlider.value, 10);
-            if (isTimeWarping || constellationSize > 2) {
+            if (!showSatNames || isTimeWarping || constellationSize > 2) {
                 document.getElementById('label-60562').style.display = 'none';
                 document.getElementById('label-64552').style.display = 'none';
                 return;
             }
 
-            const minFadeDist = 12; // Lowered from 15 to bring the fade-out point even closer.
-            const maxFadeDist = 35; // Adjusted to maintain a smooth fade transition.
+            const minFadeDist = 15; // Splitting the difference between 12 and 18.
+            const maxFadeDist = 42; // Adjusted for a smooth fade transition.
             const camDistance = camera.position.length();
 
             // Calculate opacity based on camera distance
@@ -1889,3 +1886,7 @@
 </body>
 
 </html>
+
+
+
+
