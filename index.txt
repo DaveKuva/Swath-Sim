@@ -60,9 +60,9 @@
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .slide-panel {
-            position: absolute;
+            position: fixed;
             top: 0;
-            height: 100vh;
+            bottom: 0;
             width: 300px; 
             max-width: 85%;
             background-color: rgba(10, 10, 10, 0.8);
@@ -192,6 +192,24 @@
             width: 1.5rem;
             border-radius: 50%;
             border: 2px solid #A5AEAB;
+        }
+        /* Custom Scrollbar for Webkit browsers */
+        .overflow-y-auto::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -446,7 +464,7 @@
                              satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
                              satelliteListChevron.classList.add('rotate-180');
                         }
-                    }, 300); // Match transition duration
+                    }, 50); // A small delay is enough to ensure the transition has begun.
                 }
             });
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
