@@ -458,19 +458,22 @@
                 constellationCount.textContent = size;
                 
                 if (stepIndex !== lastConstellationStepIndex) {
-                    // Turn off swath recording for all satellites when constellation size changes.
+                    // "Jiggle the handle": Briefly enable recording on all sats to force the performant code path.
                     for (const id in trackedSatellites) {
-                        const sat = trackedSatellites[id];
-                        if (sat.isSwathRecording) {
-                            sat.isSwathRecording = false;
-                            clearSwathPath(id);
-                        }
+                        trackedSatellites[id].isSwathRecording = true;
                     }
-                    // Update the UI to reflect the toggles being turned off.
-                    updateSatelliteListUI();
 
                     updateConstellation(size);
                     lastConstellationStepIndex = stepIndex;
+
+                    // Immediately turn recording back off and clean up.
+                    for (const id in trackedSatellites) {
+                        trackedSatellites[id].isSwathRecording = false;
+                        clearSwathPath(id); // Clear any artifacts from the brief recording.
+                    }
+                    
+                    // Update the UI to ensure the toggles are correctly shown as 'off'.
+                    updateSatelliteListUI();
                 }
             });
             
@@ -1095,5 +1098,4 @@
     </script>
 </body>
 </html>
-
 
