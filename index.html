@@ -434,7 +434,21 @@
                     updateSatelliteListUI();
                 }
             });
-            toggleLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.toggle('open'));
+            toggleLeftPanelBtn.addEventListener('click', () => {
+                const isOpening = !satellitePanel.classList.contains('open');
+                satellitePanel.classList.toggle('open');
+                
+                if (isOpening) {
+                    // Use a timeout to let the panel transition finish before calculating scrollHeight
+                    setTimeout(() => {
+                        const isSatListClosed = !satelliteListContainer.style.maxHeight || satelliteListContainer.style.maxHeight === '0px';
+                        if (isSatListClosed) {
+                             satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
+                             satelliteListChevron.classList.add('rotate-180');
+                        }
+                    }, 300); // Match transition duration
+                }
+            });
             closeLeftPanelBtn.addEventListener('click', () => satellitePanel.classList.remove('open'));
             container.addEventListener('pointerdown', (e) => {
                 pressStartTime = Date.now();
@@ -691,8 +705,7 @@
              const newColor = isMain ? SAT_COLORS[satColorIndex++ % SAT_COLORS.length] : 0xaaaaaa;
              const baseSize = 0.08, scaleFactor = baseSize / 366; 
              const mainSatSize = { x: 226 * scaleFactor, y: 100 * scaleFactor, z: 366 * scaleFactor };
-             const instanceSatSize = { x: mainSatSize.x / 2, y: mainSatSize.y / 2, z: mainSatSize.z / 2 };
-             const size = isMain ? mainSatSize : instanceSatSize;
+             const size = mainSatSize;
     
              const satGeo = new THREE.BoxGeometry(size.x, size.y, size.z);
              const satMat = new THREE.MeshBasicMaterial({ color: newColor });
@@ -818,12 +831,6 @@
             const isOpen = satelliteListContainer.style.maxHeight !== '0px' && satelliteListContainer.style.maxHeight;
             if (isOpen) {
                 satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
-            }
-            if (isInitialLoad) {
-                setTimeout(() => {
-                    satelliteListContainer.style.maxHeight = satelliteListContainer.scrollHeight + 'px';
-                    satelliteListChevron.classList.add('rotate-180');
-                }, 100);
             }
         }
         function updateFocusedSatInfoUI() {
