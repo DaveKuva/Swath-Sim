@@ -166,32 +166,30 @@
 
         /* Track */
         input[type=range]::-webkit-slider-runnable-track {
-            background: #4a5568;
-            height: 0.25rem;
-            border-radius: 0.25rem;
+            background: transparent;
+            height: 0.5rem;
         }
         input[type=range]::-moz-range-track {
-            background: #4a5568;
-            height: 0.25rem;
-            border-radius: 0.25rem;
+            background: transparent;
+            height: 0.5rem;
         }
 
         /* Thumb */
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            margin-top: -6px; /* Position thumb vertically */
+            margin-top: -10px;
             background-color: #FDFDFD;
-            height: 1rem;
-            width: 1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             border-radius: 50%;
             border: 2px solid #A5AEAB;
         }
         input[type=range]::-moz-range-thumb {
             border: none;
             background-color: #FDFDFD;
-            height: 1rem;
-            width: 1rem;
+            height: 1.5rem;
+            width: 1.5rem;
             border-radius: 50%;
             border: 2px solid #A5AEAB;
         }
@@ -221,16 +219,17 @@
             </div>
             <div id="constellationControl" class="space-y-3 mt-4 pt-4 border-t border-gray-700">
                 <label for="constellationSlider" class="font-bold text-sm whitespace-nowrap">Hyperfield constellation size: <span id="constellationCount">2</span></label>
-                <div id="slider-container" class="relative w-full py-4 cursor-pointer mb-2">
-                    <input type="range" id="constellationSlider" min="0" max="5" value="0" step="1" class="w-full absolute top-1/2 -translate-y-1/2 pointer-events-none">
-                    <div id="slider-ticks" class="absolute w-full top-1/2 -translate-y-1/2 left-0 flex justify-between px-1 pointer-events-none">
-                        <span class="h-2 w-px bg-gray-400"></span>
-                        <span class="h-2 w-px bg-gray-400"></span>
-                        <span class="h-2 w-px bg-gray-400"></span>
-                        <span class="h-2 w-px bg-gray-400"></span>
-                        <span class="h-2 w-px bg-gray-400"></span>
-                        <span class="h-2 w-px bg-gray-400"></span>
+                <div class="relative w-full h-10 mb-2 flex items-center">
+                    <div class="absolute w-full h-2 bg-gray-600 rounded-sm left-0 pointer-events-none"></div>
+                    <div id="slider-ticks" class="absolute w-full left-0 flex justify-between px-1 pointer-events-none">
+                        <span class="h-4 w-px bg-gray-400"></span>
+                        <span class="h-4 w-px bg-gray-400"></span>
+                        <span class="h-4 w-px bg-gray-400"></span>
+                        <span class="h-4 w-px bg-gray-400"></span>
+                        <span class="h-4 w-px bg-gray-400"></span>
+                        <span class="h-4 w-px bg-gray-400"></span>
                     </div>
+                    <input type="range" id="constellationSlider" min="0" max="5" value="0" step="1" class="w-full relative z-10">
                 </div>
                 <button id="trackEarthBtn" class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 w-full border border-gray-600">Global view</button>
                  <div id="focusControl" class="hidden">
@@ -379,6 +378,7 @@
         const SWATH_SNAPSHOT_DISTANCE_KM = 45; 
         const MAX_SWATH_SNAPSHOTS = 20000; // Maximum number of path segments per satellite instance
         const CONSTELLATION_STEPS = [2, 6, 12, 36, 66, 100];
+        const MAX_CONSTELLATION_SIZE = 100;
         
         // A reusable dummy object for efficient matrix calculations to avoid creating new objects in the render loop.
         const dummyMatrixObject = new THREE.Object3D();
@@ -453,49 +453,20 @@
                 }
             });
             
-            const sliderContainer = document.getElementById('slider-container');
-            sliderContainer.addEventListener('click', (e) => {
-                const slider = document.getElementById('constellationSlider');
-                // Don't interfere with the user dragging the thumb
-                if (e.target === slider) return;
-
-                const rect = sliderContainer.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const width = rect.width;
-                const percentage = clickX / width;
-                
-                const maxSteps = CONSTELLATION_STEPS.length - 1;
-                let stepIndex = Math.round(percentage * maxSteps);
-                
-                stepIndex = Math.max(0, Math.min(stepIndex, maxSteps));
-                
-                if (parseInt(slider.value, 10) !== stepIndex) {
-                    slider.value = stepIndex;
-                    slider.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-            });
-
             constellationSlider.addEventListener('input', (e) => {
                 const stepIndex = parseInt(e.target.value, 10);
                 const size = CONSTELLATION_STEPS[stepIndex];
                 constellationCount.textContent = size;
-                
                 if (stepIndex !== lastConstellationStepIndex) {
-                    // "Jiggle the handle": Briefly enable recording on all sats to force the performant code path.
                     for (const id in trackedSatellites) {
                         trackedSatellites[id].isSwathRecording = true;
                     }
-
                     updateConstellation(size);
                     lastConstellationStepIndex = stepIndex;
-
-                    // Immediately turn recording back off and clean up.
                     for (const id in trackedSatellites) {
                         trackedSatellites[id].isSwathRecording = false;
-                        clearSwathPath(id); // Clear any artifacts from the brief recording.
+                        clearSwathPath(id);
                     }
-                    
-                    // Update the UI to ensure the toggles are correctly shown as 'off'.
                     updateSatelliteListUI();
                 }
             });
@@ -656,16 +627,7 @@
             const skyMat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, color: 0xcccccc });
             scene.add(new THREE.Mesh(skyGeo, skyMat));
         }
-        
-        function createSwath() {
-            const swathSize = 50 * SCALING_FACTOR;
-            const swathGeo = new THREE.PlaneGeometry(swathSize, swathSize);
-            const swathMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
-            const mesh = new THREE.Mesh(swathGeo, swathMat);
-            mesh.renderOrder = 1; 
-            mesh.visible = false;
-            return mesh;
-        }
+
         function getJulianDate(date) { return (date.getTime() / 86400000) + 2440587.5; }
         function calculateAccurateSunPosition(date) {
             const toRad = Math.PI / 180;
@@ -687,12 +649,42 @@
             const distanceScale = 100;
             return new THREE.Vector3(sunX * distanceScale, sunZ * distanceScale, -sunY * distanceScale);
         }
+        
         function addSatellite(noradId, tleData) {
             if (!tleData) return;
             const tleName = tleData[0];
             const satrec = satellite.twoline2satrec(tleData[1].trim(), tleData[2].trim());
             const mainSat = createSatelliteInstance(true);
-            trackedSatellites[noradId] = { satrec, tleName, color: mainSat.mesh.material.color.getHex(), orbit: createOrbit(satrec), instances: [mainSat], isVisible: true, isSwathVisible: true, isSwathRecording: false };
+
+            // --- PERFORMANCE: Create InstancedMeshes for live swath and beam ---
+            const swathSize = 50 * SCALING_FACTOR;
+            const swathGeo = new THREE.PlaneGeometry(swathSize, swathSize);
+            const swathMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
+            const instancedLiveSwath = new THREE.InstancedMesh(swathGeo, swathMat, MAX_CONSTELLATION_SIZE);
+            instancedLiveSwath.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            instancedLiveSwath.renderOrder = 1;
+            scene.add(instancedLiveSwath);
+
+            const radiusBottom = swathSize / Math.sqrt(2);
+            const beamGeo = new THREE.CylinderGeometry(radiusBottom, 0.001, 1, 4, 1);
+            beamGeo.rotateY(Math.PI / 4); beamGeo.rotateX(Math.PI / 2); beamGeo.translate(0, 0, 0.5); 
+            const beamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, depthTest: false });
+            const instancedLiveBeam = new THREE.InstancedMesh(beamGeo, beamMat, MAX_CONSTELLATION_SIZE);
+            instancedLiveBeam.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+            scene.add(instancedLiveBeam);
+            
+            trackedSatellites[noradId] = { 
+                satrec, 
+                tleName, 
+                color: mainSat.mesh.material.color.getHex(), 
+                orbit: createOrbit(satrec), 
+                instances: [mainSat], 
+                isVisible: true, 
+                isSwathVisible: true, 
+                isSwathRecording: false,
+                instancedLiveSwath,
+                instancedLiveBeam
+            };
             scene.add(trackedSatellites[noradId].orbit);
         }
         function createSatelliteInstance(isMain = false) {
@@ -707,18 +699,7 @@
              const satMesh = new THREE.Mesh(satGeo, satMat);
              scene.add(satMesh);
              
-             const swath = createSwath();
-             scene.add(swath);
-             
-             const swathSize = 50 * SCALING_FACTOR;
-             const radiusBottom = swathSize / Math.sqrt(2);
-             const beamGeo = new THREE.CylinderGeometry(0.001, radiusBottom, 1, 4, 1);
-             beamGeo.rotateY(Math.PI / 4); beamGeo.rotateX(Math.PI / 2); beamGeo.translate(0, 0, 0.5); 
-             const beamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25, side: THREE.DoubleSide, depthWrite: false, depthTest: false });
-             const beam = new THREE.Mesh(beamGeo, beamMat);
-             scene.add(beam);
-             
-             const swathPathGeo = new THREE.PlaneGeometry(swathSize, swathSize);
+             const swathPathGeo = new THREE.PlaneGeometry(50 * SCALING_FACTOR, 50 * SCALING_FACTOR);
              const yellowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
              const orangeMat = new THREE.MeshBasicMaterial({ color: 0xffa500, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthTest: false });
 
@@ -733,7 +714,7 @@
 
              earth.add(instancedSwathYellow, instancedSwathOrange);
 
-             return { mesh: satMesh, swath, beam, lastSnapshotPosition: new THREE.Vector3(), needsSnapshotReset: true, velocity: { x: 0, y: 0, z: 0 }, instancedSwathYellow, instancedSwathOrange, swathCount: 0 };
+             return { mesh: satMesh, lastSnapshotPosition: new THREE.Vector3(), needsSnapshotReset: true, velocity: { x: 0, y: 0, z: 0 }, instancedSwathYellow, instancedSwathOrange, swathCount: 0 };
         }
         function updateConstellation(size) {
             ['60562', '64552'].forEach(id => {
@@ -741,7 +722,7 @@
                 if (sat) {
                     for(let i = 1; i < sat.instances.length; i++) {
                         const instance = sat.instances[i];
-                        scene.remove(instance.mesh); scene.remove(instance.swath); scene.remove(instance.beam);
+                        scene.remove(instance.mesh);
                         earth.remove(instance.instancedSwathYellow);
                         earth.remove(instance.instancedSwathOrange);
                         instance.instancedSwathYellow.dispose();
@@ -948,14 +929,12 @@
                 const timeOffset = orbitalPeriod / sat.instances.length;
                 const epochDate = new Date((sat.satrec.jdsatepoch - 2440587.5) * 86400000);
                 const timeSinceEpoch = now.getTime() - epochDate.getTime();
+                let visibleCount = 0;
                 sat.instances.forEach((instance, index) => {
                     instance.mesh.visible = sat.isVisible;
                     instance.instancedSwathYellow.visible = sat.isVisible;
                     instance.instancedSwathOrange.visible = sat.isVisible;
-                    if (!sat.isVisible) {
-                        instance.swath.visible = false; instance.beam.visible = false;
-                        return;
-                    }
+                    if (!sat.isVisible) return;
                     
                     const instanceTime = new Date(epochDate.getTime() + (timeSinceEpoch + (index * timeOffset)) % orbitalPeriod);
                     const posVel = satellite.propagate(sat.satrec, instanceTime);
@@ -982,58 +961,55 @@
                         }
                         
                         const isHyperfield = sat.tleName.toLowerCase().includes('hyperfield');
-                        if (!isHyperfield) {
-                            instance.swath.visible = false;
-                            instance.beam.visible = false;
-                        } else {
-                             const isDaySide = instance.mesh.position.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
-                             const liveSwathShouldBeVisible = sat.isSwathVisible && (!enforceDayNightSwath || isDaySide);
-                             
-                             instance.swath.visible = liveSwathShouldBeVisible;
-                             instance.beam.visible = liveSwathShouldBeVisible && showBeams;
-                             
-                             if (liveSwathShouldBeVisible) {
+                        if (isHyperfield) {
+                            const isDaySide = instance.mesh.position.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
+                            const liveSwathShouldBeVisible = sat.isSwathVisible && (!enforceDayNightSwath || isDaySide);
+
+                            if (liveSwathShouldBeVisible) {
+                                // Swath
                                 const surfacePosition = instance.mesh.position.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005);
-                                instance.swath.position.copy(surfacePosition);
                                 const satVelVec = new THREE.Vector3(instance.velocity.x, instance.velocity.z, -instance.velocity.y).normalize();
-                                instance.swath.up.copy(satVelVec);
-                                instance.swath.lookAt(earth.position);
-                                instance.beam.position.copy(surfacePosition);
-                                instance.beam.up.copy(satVelVec);
-                                instance.beam.lookAt(instance.mesh.position);
-                                instance.beam.scale.z = surfacePosition.distanceTo(instance.mesh.position);
-                             }
+                                dummyMatrixObject.position.copy(surfacePosition);
+                                dummyMatrixObject.up.copy(satVelVec);
+                                dummyMatrixObject.lookAt(earth.position);
+                                dummyMatrixObject.updateMatrix();
+                                sat.instancedLiveSwath.setMatrixAt(visibleCount, dummyMatrixObject.matrix);
+
+                                // Beam
+                                if (showBeams) {
+                                    dummyMatrixObject.position.copy(instance.mesh.position); // Position at satellite
+                                    dummyMatrixObject.up.copy(satVelVec);
+                                    dummyMatrixObject.lookAt(surfacePosition); // Look at the surface
+                                    dummyMatrixObject.updateMatrix();
+                                    const distance = surfacePosition.distanceTo(instance.mesh.position);
+                                    const scaleMatrix = new THREE.Matrix4().makeScale(1, 1, distance);
+                                    dummyMatrixObject.matrix.multiply(scaleMatrix);
+                                    sat.instancedLiveBeam.setMatrixAt(visibleCount, dummyMatrixObject.matrix);
+                                }
+                                visibleCount++;
+                            }
                             
                             if (sat.isSwathRecording) {
                                 const addSnapshot = (inst, position3D, upVector) => {
                                     if (inst.swathCount >= MAX_SWATH_SNAPSHOTS) return;
                                     const isSnapshotDaySide = position3D.clone().normalize().dot(sunPosition.clone().normalize()) > 0.1;
                                     if (!enforceDayNightSwath || isSnapshotDaySide) {
-                                        
                                         const satVelocityVector = upVector;
-                                        if (satVelocityVector.lengthSq() < 0.0001) {
-                                            return; 
-                                        }
+                                        if (satVelocityVector.lengthSq() < 0.0001) return; 
                                         satVelocityVector.normalize();
-
                                         dummyMatrixObject.position.copy(position3D.clone().normalize().multiplyScalar(EARTH_RADIUS_SCALED * 1.0005));
                                         dummyMatrixObject.up.copy(satVelocityVector);
                                         dummyMatrixObject.lookAt(earth.position);
-                                        
                                         earth.worldToLocal(dummyMatrixObject.position);
                                         dummyMatrixObject.quaternion.premultiply(earth.quaternion.clone().invert());
                                         dummyMatrixObject.updateMatrix();
-
                                         const isYellow = inst.swathCount % 2 === 0;
                                         const mesh = isYellow ? inst.instancedSwathYellow : inst.instancedSwathOrange;
                                         const index = mesh.count;
-
                                         if (index >= MAX_SWATH_SNAPSHOTS) return;
-
                                         mesh.setMatrixAt(index, dummyMatrixObject.matrix);
                                         mesh.count = index + 1; 
                                         mesh.instanceMatrix.needsUpdate = true;
-                                        
                                         inst.swathCount++;
                                     }
                                 };
@@ -1055,6 +1031,15 @@
                         }
                     }
                 });
+
+                if (sat.instancedLiveSwath) {
+                    sat.instancedLiveSwath.count = visibleCount;
+                    sat.instancedLiveSwath.instanceMatrix.needsUpdate = true;
+                }
+                if (sat.instancedLiveBeam) {
+                    sat.instancedLiveBeam.count = showBeams ? visibleCount : 0;
+                    sat.instancedLiveBeam.instanceMatrix.needsUpdate = true;
+                }
             }
             handleCamera(deltaTime);
             controls.update();
